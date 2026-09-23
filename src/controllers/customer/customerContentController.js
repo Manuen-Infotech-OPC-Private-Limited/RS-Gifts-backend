@@ -1,0 +1,100 @@
+const Banner = require('../../models/Banner');
+const Category = require('../../models/Category');
+const Occasion = require('../../models/Occasion');
+const Setting = require('../../models/Setting');
+
+// @desc    Get active promotional banners
+// @route   GET /api/customer/content/banners
+// @access  Public
+const getActiveBanners = async (req, res) => {
+  try {
+    const banners = await Banner.find({ active: true }).sort({ order: 1, createdAt: -1 });
+    res.status(200).json({
+      success: true,
+      count: banners.length,
+      banners,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Get active categories
+// @route   GET /api/customer/content/categories
+// @access  Public
+const getActiveCategories = async (req, res) => {
+  try {
+    const categories = await Category.find({ active: true }).sort({ name: 1 });
+    res.status(200).json({
+      success: true,
+      count: categories.length,
+      categories,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Get active occasions
+// @route   GET /api/customer/content/occasions
+// @access  Public
+const getActiveOccasions = async (req, res) => {
+  try {
+    const occasions = await Occasion.find({ active: true }).sort({ name: 1 });
+    res.status(200).json({
+      success: true,
+      count: occasions.length,
+      occasions,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Get public store settings
+// @route   GET /api/customer/content/settings
+// @access  Public
+const getPublicSettings = async (req, res) => {
+  try {
+    let settings = await Setting.findOne();
+    if (!settings) {
+      settings = await Setting.create({});
+    }
+
+    res.status(200).json({
+      success: true,
+      settings: {
+        storeName: settings.storeName,
+        storeTagline: settings.storeTagline,
+        supportEmail: settings.supportEmail,
+        contactPhone: settings.contactPhone,
+        storeAddress: settings.storeAddress,
+        currencySymbol: settings.currencySymbol,
+        standardShippingFee: settings.standardShippingFee,
+        freeShippingThreshold: settings.freeShippingThreshold,
+        cashOnDeliveryEnabled: settings.cashOnDeliveryEnabled,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+module.exports = {
+  getActiveBanners,
+  getActiveCategories,
+  getActiveOccasions,
+  getPublicSettings,
+};
