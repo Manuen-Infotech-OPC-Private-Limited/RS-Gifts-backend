@@ -257,19 +257,22 @@ const seedDatabase = async () => {
     }
 
     // 1. Seed Administrator
+    await User.updateMany({ role: 'superadmin' }, { role: 'admin' });
     const existingAdmin = await User.findOne({ email: 'admin@rsgifts.com' });
     if (!existingAdmin) {
       await User.create({
-        name: 'RS Gifts Super Admin',
+        name: 'RS Gifts Admin',
         email: 'admin@rsgifts.com',
         password: 'Admin@123',
-        role: 'superadmin',
+        role: 'admin',
         phone: '+91 98765 43210',
         isActive: true,
       });
       console.log('Admin account seeded: admin@rsgifts.com / Admin@123');
     } else {
-      console.log('Admin account already exists (admin@rsgifts.com).');
+      existingAdmin.role = 'admin';
+      await existingAdmin.save({ validateBeforeSave: false });
+      console.log('Admin account already exists and role confirmed as admin (admin@rsgifts.com).');
     }
 
     // 2. Seed Default Settings

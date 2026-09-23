@@ -25,7 +25,7 @@ const loginAdmin = async (req, res) => {
       });
     }
 
-    if (admin.role !== 'admin' && admin.role !== 'superadmin') {
+    if (admin.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Access denied. Account is not registered as an administrator.',
@@ -163,7 +163,7 @@ const updateAdminProfile = async (req, res) => {
 // @access  Public (Only allowed if no admin exists in database)
 const registerInitialAdmin = async (req, res) => {
   try {
-    const existingAdmin = await User.findOne({ role: { $in: ['admin', 'superadmin'] } });
+    const existingAdmin = await User.findOne({ role: 'admin' });
     if (existingAdmin) {
       return res.status(403).json({
         success: false,
@@ -184,7 +184,7 @@ const registerInitialAdmin = async (req, res) => {
       email: email.toLowerCase(),
       password,
       phone: phone || '',
-      role: 'superadmin',
+      role: 'admin',
       isActive: true,
     });
 
