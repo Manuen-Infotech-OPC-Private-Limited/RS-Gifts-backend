@@ -7,14 +7,14 @@ const connectDB = async () => {
     console.error('\n======================================================');
     console.error('⚠️  MONGODB CONNECTION STRING MISSING OR UNCONFIGURED!');
     console.error('Please open .env file and set your MONGO_URI string:');
-    console.error('Example: MONGO_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/rs_gifts_db');
+    console.error('Example: MONGO_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/RSGIFTS');
     console.error('======================================================\n');
     return false;
   }
 
   try {
     const conn = await mongoose.connect(uri, {
-      dbName: process.env.MONGO_DB_NAME || 'rs_gifts_db',
+      dbName: process.env.MONGO_DB_NAME || 'RSGIFTS',
       serverSelectionTimeoutMS: 5000,
     });
 

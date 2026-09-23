@@ -236,7 +236,7 @@ const seedDatabase = async () => {
   try {
     console.log('\nConnecting to MongoDB...');
     await mongoose.connect(uri, {
-      dbName: process.env.MONGO_DB_NAME || 'rs_gifts_db',
+      dbName: process.env.MONGO_DB_NAME || 'RSGIFTS',
       serverSelectionTimeoutMS: 8000,
     });
     console.log('Connected to MongoDB successfully.');

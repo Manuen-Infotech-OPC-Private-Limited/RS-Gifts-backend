@@ -45,7 +45,8 @@ PORT=5000
 NODE_ENV=development
 
 # Paste your MongoDB Atlas or remote connection string here:
-MONGO_URI=mongodb+srv://<username>:<password>@cluster0.abcde.mongodb.net/rs_gifts_db?retryWrites=true&w=majority
+MONGO_URI=mongodb+srv://<username>:<password>@cluster0.abcde.mongodb.net/RSGIFTS?retryWrites=true&w=majority
+MONGO_DB_NAME=RSGIFTS
 
 # JWT Secret Key
 JWT_SECRET=rs_gifts_super_secret_jwt_key_2026_secure
