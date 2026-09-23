@@ -228,7 +228,7 @@ const seedDatabase = async () => {
   const uri = process.env.MONGO_URI;
 
   if (!uri || uri === 'your_mongodb_connection_string_here') {
-    console.error('\n❌ CANNOT SEED DATABASE: MONGO_URI is missing or unconfigured in .env');
+    console.error('\nERROR: CANNOT SEED DATABASE: MONGO_URI is missing or unconfigured in .env');
     console.error('Please configure your MONGO_URI connection string in .env and run "npm run seed" again.\n');
     process.exit(1);
   }
@@ -267,9 +267,9 @@ const seedDatabase = async () => {
         phone: '+91 98765 43210',
         isActive: true,
       });
-      console.log('✅ Admin account seeded: admin@rsgifts.com / Admin@123');
+      console.log('Admin account seeded: admin@rsgifts.com / Admin@123');
     } else {
-      console.log('ℹ️ Admin account already exists (admin@rsgifts.com).');
+      console.log('Admin account already exists (admin@rsgifts.com).');
     }
 
     // 2. Seed Default Settings
@@ -288,26 +288,26 @@ const seedDatabase = async () => {
         adminName: 'RS Gifts Super Admin',
         adminEmail: 'admin@rsgifts.com',
       });
-      console.log('✅ Store settings initialized.');
+      console.log('Store settings initialized.');
     }
 
     // 3. Seed Categories
     for (const cat of initialCategories) {
       await Category.findOneAndUpdate({ slug: cat.slug }, cat, { upsert: true, new: true });
     }
-    console.log(`✅ ${initialCategories.length} Categories seeded.`);
+    console.log(`${initialCategories.length} Categories seeded.`);
 
     // 4. Seed Occasions
     for (const occ of initialOccasions) {
       await Occasion.findOneAndUpdate({ slug: occ.slug }, occ, { upsert: true, new: true });
     }
-    console.log(`✅ ${initialOccasions.length} Occasions seeded.`);
+    console.log(`${initialOccasions.length} Occasions seeded.`);
 
     // 5. Seed Coupons
     for (const coup of initialCoupons) {
       await Coupon.findOneAndUpdate({ code: coup.code }, coup, { upsert: true, new: true });
     }
-    console.log(`✅ ${initialCoupons.length} Discount Coupons seeded.`);
+    console.log(`${initialCoupons.length} Discount Coupons seeded.`);
 
     // 6. Seed Banners
     for (const ban of initialBanners) {
@@ -316,7 +316,7 @@ const seedDatabase = async () => {
         await Banner.create(ban);
       }
     }
-    console.log(`✅ Promotional banners seeded.`);
+    console.log('Promotional banners seeded.');
 
     // 7. Seed Sample Products
     await Product.deleteMany({ slug: null });
@@ -329,17 +329,17 @@ const seedDatabase = async () => {
         await Product.create(prod);
       }
     }
-    console.log(`✅ ${initialProducts.length} Sample Gift Products seeded.`);
+    console.log(`${initialProducts.length} Sample Gift Products seeded.`);
 
     console.log('\n======================================================');
-    console.log('🎉 SEEDING COMPLETED SUCCESSFULLY!');
+    console.log('SEEDING COMPLETED SUCCESSFULLY!');
     console.log('Default Admin: admin@rsgifts.com');
     console.log('Default Password: Admin@123');
     console.log('======================================================\n');
 
     process.exit(0);
   } catch (error) {
-    console.error('❌ Seeding failed:', error.message);
+    console.error('Seeding failed:', error.message);
     process.exit(1);
   }
 };

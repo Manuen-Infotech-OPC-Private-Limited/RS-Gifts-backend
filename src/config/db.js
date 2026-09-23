@@ -4,11 +4,7 @@ const connectDB = async () => {
   const uri = process.env.MONGO_URI;
 
   if (!uri || uri === 'your_mongodb_connection_string_here') {
-    console.error('\n======================================================');
-    console.error('⚠️  MONGODB CONNECTION STRING MISSING OR UNCONFIGURED!');
-    console.error('Please open .env file and set your MONGO_URI string:');
-    console.error('Example: MONGO_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/RSGIFTS');
-    console.error('======================================================\n');
+    console.error('WARNING: MONGODB CONNECTION STRING MISSING OR UNCONFIGURED!');
     return false;
   }
 
@@ -18,19 +14,19 @@ const connectDB = async () => {
       serverSelectionTimeoutMS: 5000,
     });
 
-    console.log(`✅ MongoDB Connected: ${conn.connection.host} (DB: ${conn.connection.name})`);
+    console.log(`MongoDB Connected: ${conn.connection.host} (DB: ${conn.connection.name})`);
 
     mongoose.connection.on('error', (err) => {
-      console.error(`❌ MongoDB connection error: ${err.message}`);
+      console.error(`MongoDB connection error: ${err.message}`);
     });
 
     mongoose.connection.on('disconnected', () => {
-      console.warn('⚠️  MongoDB disconnected.');
+      console.warn('MongoDB disconnected.');
     });
 
     return true;
   } catch (error) {
-    console.error(`❌ MongoDB Connection Failed: ${error.message}`);
+    console.error(`MongoDB Connection Failed: ${error.message}`);
     return false;
   }
 };

@@ -1,37 +1,37 @@
-# RS-Gifts Backend API 🎁
+# RS-Gifts Backend API
 
 A robust, production-grade **Node.js + Express + MongoDB** REST API backend powering both the **Admin Dashboard** and the **Customer Storefront** for RS-Gifts.
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
 * **Admin Operations**:
-  * 🔐 **Secure Authentication**: JWT-based authentication with bcrypt-hashed passwords.
-  * 📊 **Dashboard Analytics**: Revenue calculations, order statistics, stock warnings, and 7-day sales graph data.
-  * 📦 **Product Catalog Management**: Products with custom text/engraving options, photo upload requirements, and gift-wrap settings.
-  * 🏷️ **Categories & Occasions**: Multi-category and occasion tagging system.
-  * 🛒 **Order Fulfillment Lifecycle**: Tracking statuses (`Pending` $\rightarrow$ `Processing` $\rightarrow$ `Shipped` $\rightarrow$ `Delivered` $\rightarrow$ `Cancelled`), automated stock deduction and restocking.
-  * 👥 **Customer CRM**: Customer purchase aggregations, order count, total spending, and status controls.
-  * 🎟️ **Coupons & Promotions**: Percentage and flat discount rules, minimum order value thresholds, and usage limits.
-  * 🖼️ **Content Management**: Homepage hero banners and campaign promotions.
-  * ⭐ **Review Moderation**: Approve, reject, and reply to customer product reviews.
-  * ⚙️ **Store Settings**: Real-time shipping fee thresholds, COD toggles, and Cloudinary keys.
+  * **Secure Authentication**: JWT-based authentication with bcrypt-hashed passwords.
+  * **Dashboard Analytics**: Revenue calculations, order statistics, stock warnings, and 7-day sales graph data.
+  * **Product Catalog Management**: Products with custom text/engraving options, photo upload requirements, and gift-wrap settings.
+  * **Categories & Occasions**: Multi-category and occasion tagging system.
+  * **Order Fulfillment Lifecycle**: Tracking statuses (`Pending` -> `Processing` -> `Shipped` -> `Delivered` -> `Cancelled`), automated stock deduction and restocking.
+  * **Customer CRM**: Customer purchase aggregations, order count, total spending, and status controls.
+  * **Coupons & Promotions**: Percentage and flat discount rules, minimum order value thresholds, and usage limits.
+  * **Content Management**: Homepage hero banners and campaign promotions.
+  * **Review Moderation**: Approve, reject, and reply to customer product reviews.
+  * **Store Settings**: Real-time shipping fee thresholds, COD toggles, and Cloudinary keys.
 
 * **Customer Operations**:
-  * 👤 **Customer Authentication & Profiles**: Registration, login, profile updates, and saved shipping addresses.
-  * 🛍️ **Public Catalog**: Browsing with filtering (category, occasion, price range, stock availability), full-text search, and multiple sort orders.
-  * 🏷️ **Discount Coupons**: Live coupon validation and discount calculation at checkout.
-  * 💳 **Checkout & Orders**: Place orders (Cash on Delivery or Online), track live status, and cancel pending orders.
-  * ✍️ **Product Reviews**: Submit star ratings and customer feedback.
-  * 🖼️ **Storefront Assets**: Fetch active banners, categories, occasions, and store contact info.
+  * **Customer Authentication & Profiles**: Registration, login, profile updates, and saved shipping addresses.
+  * **Public Catalog**: Browsing with filtering (category, occasion, price range, stock availability), full-text search, and multiple sort orders.
+  * **Discount Coupons**: Live coupon validation and discount calculation at checkout.
+  * **Checkout & Orders**: Place orders (Cash on Delivery or Online), track live status, and cancel pending orders.
+  * **Product Reviews**: Submit star ratings and customer feedback.
+  * **Storefront Assets**: Fetch active banners, categories, occasions, and store contact info.
 
 * **Media Uploads**:
-  * 📷 Hybrid upload engine supporting both **Cloudinary CDN** and local static storage (`/uploads/`).
+  * Hybrid upload engine supporting both **Cloudinary CDN** and local static storage (`/uploads/`).
 
 ---
 
-## 🚀 Quick Start Guide
+## Quick Start Guide
 
 ### 1. Prerequisites
 - **Node.js** (v18 or higher recommended)
@@ -88,7 +88,7 @@ Health Check: **`http://localhost:5000/api/health`**
 
 ---
 
-## 📡 API Reference Overview
+## API Reference Overview
 
 ### Health & Server Check
 | Method | Endpoint | Description | Auth |
@@ -133,7 +133,7 @@ Health Check: **`http://localhost:5000/api/health`**
 #### 5. Order Management
 * `GET /api/admin/orders` - List all orders with filters (`status`, `paymentStatus`, `search`, `sort`)
 * `GET /api/admin/orders/:id` - Full order details with personalization notes and customer contact
-* `PATCH /api/admin/orders/:id/status` - Update status (`Pending`, `Processing`, `Shipped`, `Delivered`, `Cancelled`). *Automatically restocks inventory if Cancelled.*
+* `PATCH /api/admin/orders/:id/status` - Update status (`Pending`, `Processing`, `Shipped`, `Delivered`, `Cancelled`). Automatically restocks inventory if Cancelled.
 * `PATCH /api/admin/orders/:id/payment-status` - Update payment status (`Pending`, `Paid`, `Failed`, `Refunded`)
 
 #### 6. Customers CRM
@@ -199,7 +199,7 @@ Health Check: **`http://localhost:5000/api/health`**
 
 ---
 
-## 📂 Project Architecture
+## Project Architecture
 
 ```
 RS-Gifts-backend/
