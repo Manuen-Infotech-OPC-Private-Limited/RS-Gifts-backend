@@ -1,5 +1,5 @@
-const Product = require('../../models/Product');
-const Review = require('../../models/Review');
+import Product from '../../models/Product.js';
+import Review from '../../models/Review.js';
 
 // @desc    Get active public products with filtering, search, and sorting
 // @route   GET /api/customer/products
@@ -144,7 +144,7 @@ const getProductBySlugOrId = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   getCustomerProducts,
   getFeaturedProducts,
   getProductBySlugOrId,

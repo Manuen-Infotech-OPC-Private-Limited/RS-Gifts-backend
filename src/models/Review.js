@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const reviewSchema = new mongoose.Schema({
   product: {
@@ -45,45 +45,5 @@ const reviewSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-// Static method to update product average rating
-reviewSchema.statics.calculateAverageRating = async function (productId) {
-  const stats = await this.aggregate([
-    { $match: { product: productId, isApproved: true } },
-    {
-      $group: {
-        _id: '$product',
-        avgRating: { $avg: '$rating' },
-        count: { $sum: 1 },
-      },
-    },
-  ]);
-
-  try {
-    const Product = mongoose.model('Product');
-    if (stats.length > 0) {
-      await Product.findByIdAndUpdate(productId, {
-        'ratings.average': Math.round(stats[0].avgRating * 10) / 10,
-        'ratings.count': stats[0].count,
-      });
-    } else {
-      await Product.findByIdAndUpdate(productId, {
-        'ratings.average': 0,
-        'ratings.count': 0,
-      });
-    }
-  } catch (error) {
-    console.error('Error updating product average rating:', error);
-  }
-};
-
-reviewSchema.post('save', function () {
-  this.constructor.calculateAverageRating(this.product);
-});
-
-reviewSchema.post('findOneAndDelete', function (doc) {
-  if (doc) {
-    doc.constructor.calculateAverageRating(doc.product);
-  }
-});
-
-module.exports = mongoose.model('Review', reviewSchema);
+const Review = mongoose.model('Review', reviewSchema);
+export default Review;

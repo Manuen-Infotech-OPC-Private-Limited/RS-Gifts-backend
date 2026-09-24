@@ -1,5 +1,6 @@
-const User = require('../../models/User');
-const generateToken = require('../../utils/generateToken');
+import bcrypt from 'bcryptjs';
+import User from '../../models/User.js';
+import generateToken from '../../utils/generateToken.js';
 
 // @desc    Authenticate Admin & Get Token
 // @route   POST /api/admin/auth/login
@@ -39,7 +40,8 @@ const loginAdmin = async (req, res) => {
       });
     }
 
-    const isMatch = await admin.comparePassword(password);
+    // Compare password directly in controller
+    const isMatch = await bcrypt.compare(password, admin.password);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -126,14 +128,16 @@ const updateAdminProfile = async (req, res) => {
           message: 'Current password is required to set a new password',
         });
       }
-      const isMatch = await admin.comparePassword(currentPassword);
+      const isMatch = await bcrypt.compare(currentPassword, admin.password);
       if (!isMatch) {
         return res.status(401).json({
           success: false,
           message: 'Current password does not match',
         });
       }
-      admin.password = newPassword;
+      // Hash new password in controller
+      const salt = await bcrypt.genSalt(10);
+      admin.password = await bcrypt.hash(newPassword, salt);
     }
 
     const updatedAdmin = await admin.save();
@@ -179,10 +183,14 @@ const registerInitialAdmin = async (req, res) => {
       });
     }
 
+    // Hash password directly in controller
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
     const newAdmin = await User.create({
       name,
       email: email.toLowerCase(),
-      password,
+      password: hashedPassword,
       phone: phone || '',
       role: 'admin',
       isActive: true,
@@ -209,7 +217,7 @@ const registerInitialAdmin = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   loginAdmin,
   getAdminProfile,
   updateAdminProfile,

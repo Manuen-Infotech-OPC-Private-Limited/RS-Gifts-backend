@@ -1,4 +1,4 @@
-const Coupon = require('../../models/Coupon');
+import Coupon from '../../models/Coupon.js';
 
 // @desc    Get all coupons
 // @route   GET /api/admin/coupons
@@ -182,7 +182,7 @@ const toggleCouponActive = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   getCoupons,
   createCoupon,
   updateCoupon,

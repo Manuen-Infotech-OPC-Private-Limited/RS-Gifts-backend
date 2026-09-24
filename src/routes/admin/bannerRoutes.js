@@ -1,13 +1,11 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const {
-  getBanners,
+import { getBanners,
   createBanner,
   updateBanner,
   deleteBanner,
-  toggleBannerActive,
-} = require('../../controllers/admin/bannerController');
-const { protect, adminOnly } = require('../../middlewares/authMiddleware');
+  toggleBannerActive, } from '../../controllers/admin/bannerController.js';
+import { protect, adminOnly } from '../../middlewares/authMiddleware.js';
 
 router.use(protect, adminOnly);
 
@@ -21,4 +19,4 @@ router.route('/:id')
 
 router.patch('/:id/toggle-active', toggleBannerActive);
 
-module.exports = router;
+export default router;

@@ -1,13 +1,11 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const {
-  getCoupons,
+import { getCoupons,
   createCoupon,
   updateCoupon,
   deleteCoupon,
-  toggleCouponActive,
-} = require('../../controllers/admin/couponController');
-const { protect, adminOnly } = require('../../middlewares/authMiddleware');
+  toggleCouponActive, } from '../../controllers/admin/couponController.js';
+import { protect, adminOnly } from '../../middlewares/authMiddleware.js';
 
 router.use(protect, adminOnly);
 
@@ -21,4 +19,4 @@ router.route('/:id')
 
 router.patch('/:id/toggle-active', toggleCouponActive);
 
-module.exports = router;
+export default router;

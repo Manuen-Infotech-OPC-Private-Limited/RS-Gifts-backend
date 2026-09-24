@@ -19,6 +19,6 @@ const validateRequired = (fields = []) => {
   };
 };
 
-module.exports = {
+export {
   validateRequired,
 };

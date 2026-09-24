@@ -1,6 +1,6 @@
-const { cloudinary, configureCloudinary } = require('../config/cloudinary');
-const Setting = require('../models/Setting');
-const fs = require('fs');
+import { cloudinary, configureCloudinary } from '../config/cloudinary.js';
+import Setting from '../models/Setting.js';
+import fs from 'fs';
 
 const uploadToCloudinary = async (filePath, customFolder = 'rs_gifts') => {
   // Check if credentials exist in Settings or env
@@ -44,6 +44,6 @@ const uploadToCloudinary = async (filePath, customFolder = 'rs_gifts') => {
   });
 };
 
-module.exports = {
+export {
   uploadToCloudinary,
 };

@@ -1,5 +1,5 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
 
 // Protect routes - Requires valid JWT
 const protect = async (req, res, next) => {
@@ -93,7 +93,7 @@ const optionalAuth = async (req, res, next) => {
   next();
 };
 
-module.exports = {
+export {
   protect,
   adminOnly,
   customerOnly,

@@ -1,10 +1,8 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const {
-  getSettings,
-  updateSettings,
-} = require('../../controllers/admin/settingController');
-const { protect, adminOnly } = require('../../middlewares/authMiddleware');
+import { getSettings,
+  updateSettings, } from '../../controllers/admin/settingController.js';
+import { protect, adminOnly } from '../../middlewares/authMiddleware.js';
 
 router.use(protect, adminOnly);
 
@@ -12,4 +10,4 @@ router.route('/')
   .get(getSettings)
   .put(updateSettings);
 
-module.exports = router;
+export default router;

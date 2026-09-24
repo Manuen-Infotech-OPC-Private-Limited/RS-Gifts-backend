@@ -1,4 +1,4 @@
-const Category = require('../../models/Category');
+import Category from '../../models/Category.js';
 
 // @desc    Get all categories
 // @route   GET /api/admin/categories
@@ -168,7 +168,7 @@ const toggleCategoryActive = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   getCategories,
   createCategory,
   updateCategory,

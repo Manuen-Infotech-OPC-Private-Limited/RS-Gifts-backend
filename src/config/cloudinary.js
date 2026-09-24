@@ -1,4 +1,4 @@
-const cloudinary = require('cloudinary').v2;
+import { v2 as cloudinary } from 'cloudinary';
 
 const configureCloudinary = (customConfig = null) => {
   if (customConfig && customConfig.cloudName && customConfig.apiKey && customConfig.apiSecret) {
@@ -22,7 +22,7 @@ const configureCloudinary = (customConfig = null) => {
 // Initial config
 configureCloudinary();
 
-module.exports = {
+export {
   cloudinary,
   configureCloudinary,
 };

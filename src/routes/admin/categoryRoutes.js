@@ -1,13 +1,11 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const {
-  getCategories,
+import { getCategories,
   createCategory,
   updateCategory,
   deleteCategory,
-  toggleCategoryActive,
-} = require('../../controllers/admin/categoryController');
-const { protect, adminOnly } = require('../../middlewares/authMiddleware');
+  toggleCategoryActive, } from '../../controllers/admin/categoryController.js';
+import { protect, adminOnly } from '../../middlewares/authMiddleware.js';
 
 router.use(protect, adminOnly);
 
@@ -21,4 +19,4 @@ router.route('/:id')
 
 router.patch('/:id/toggle-active', toggleCategoryActive);
 
-module.exports = router;
+export default router;

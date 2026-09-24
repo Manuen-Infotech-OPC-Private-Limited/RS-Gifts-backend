@@ -1,14 +1,16 @@
-require('dotenv').config();
-const mongoose = require('mongoose');
-const User = require('../models/User');
-const Product = require('../models/Product');
-const Category = require('../models/Category');
-const Occasion = require('../models/Occasion');
-const Coupon = require('../models/Coupon');
-const Banner = require('../models/Banner');
-const Setting = require('../models/Setting');
-const Order = require('../models/Order');
-const Review = require('../models/Review');
+import dotenv from 'dotenv';
+dotenv.config();
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import User from '../models/User.js';
+import Product from '../models/Product.js';
+import Category from '../models/Category.js';
+import Occasion from '../models/Occasion.js';
+import Coupon from '../models/Coupon.js';
+import Banner from '../models/Banner.js';
+import Setting from '../models/Setting.js';
+import Order from '../models/Order.js';
+import Review from '../models/Review.js';
 
 const initialCategories = [
   {
@@ -260,10 +262,13 @@ const seedDatabase = async () => {
     await User.updateMany({ role: 'superadmin' }, { role: 'admin' });
     const existingAdmin = await User.findOne({ email: 'admin@rsgifts.com' });
     if (!existingAdmin) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash('Admin@123', salt);
+
       await User.create({
         name: 'RS Gifts Admin',
         email: 'admin@rsgifts.com',
-        password: 'Admin@123',
+        password: hashedPassword,
         role: 'admin',
         phone: '+91 98765 43210',
         isActive: true,

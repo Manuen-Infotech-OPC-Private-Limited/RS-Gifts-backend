@@ -1,8 +1,8 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const upload = require('../middlewares/uploadMiddleware');
-const { uploadToCloudinary } = require('../services/cloudinaryService');
-const Setting = require('../models/Setting');
+import upload from '../middlewares/uploadMiddleware.js';
+import { uploadToCloudinary } from '../services/cloudinaryService.js';
+import Setting from '../models/Setting.js';
 
 // @desc    Upload a single image (Hybrid: Cloudinary or Local)
 // @route   POST /api/upload
@@ -88,4 +88,4 @@ router.post('/multiple', upload.array('images', 8), async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

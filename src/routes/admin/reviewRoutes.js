@@ -1,12 +1,10 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const {
-  getReviews,
+import { getReviews,
   toggleApproveReview,
   replyToReview,
-  deleteReview,
-} = require('../../controllers/admin/reviewController');
-const { protect, adminOnly } = require('../../middlewares/authMiddleware');
+  deleteReview, } from '../../controllers/admin/reviewController.js';
+import { protect, adminOnly } from '../../middlewares/authMiddleware.js';
 
 router.use(protect, adminOnly);
 
@@ -15,4 +13,4 @@ router.patch('/:id/toggle-approve', toggleApproveReview);
 router.patch('/:id/reply', replyToReview);
 router.delete('/:id', deleteReview);
 
-module.exports = router;
+export default router;

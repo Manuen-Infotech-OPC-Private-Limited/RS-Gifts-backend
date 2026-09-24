@@ -1,4 +1,4 @@
-const Setting = require('../../models/Setting');
+import Setting from '../../models/Setting.js';
 
 // @desc    Get store settings
 // @route   GET /api/admin/settings
@@ -77,7 +77,7 @@ const updateSettings = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   getSettings,
   updateSettings,
 };

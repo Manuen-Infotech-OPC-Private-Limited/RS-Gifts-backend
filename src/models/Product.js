@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const productSchema = new mongoose.Schema({
   title: {
@@ -87,34 +87,5 @@ const productSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Auto-generate slug and defaults
-productSchema.pre('save', function (next) {
-  if (this.title && !this.slug) {
-    this.slug = this.title
-      .toLowerCase()
-      .replace(/[^\w ]+/g, '')
-      .replace(/ +/g, '-') + '-' + Math.floor(1000 + Math.random() * 9000);
-  }
-  if (!this.salePrice && this.price) {
-    this.salePrice = this.price;
-  }
-  next();
-});
-
-// Virtual for effective current price
-productSchema.virtual('currentPrice').get(function () {
-  return (this.salePrice !== null && this.salePrice !== undefined && this.salePrice < this.price)
-    ? this.salePrice
-    : this.price;
-});
-
-// Virtual for low stock status
-productSchema.virtual('isLowStock').get(function () {
-  return this.stock > 0 && this.stock <= (this.lowStockThreshold || 5);
-});
-
-productSchema.virtual('isOutOfStock').get(function () {
-  return this.stock <= 0;
-});
-
-module.exports = mongoose.model('Product', productSchema);
+const Product = mongoose.model('Product', productSchema);
+export default Product;

@@ -1,7 +1,7 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const { validateCoupon } = require('../../controllers/customer/customerCouponController');
+import { validateCoupon } from '../../controllers/customer/customerCouponController.js';
 
 router.post('/validate', validateCoupon);
 
-module.exports = router;
+export default router;

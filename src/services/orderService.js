@@ -1,6 +1,7 @@
-const Product = require('../models/Product');
-const Coupon = require('../models/Coupon');
-const Setting = require('../models/Setting');
+import Product from '../models/Product.js';
+import Coupon from '../models/Coupon.js';
+import Setting from '../models/Setting.js';
+import { validateCouponForAmount } from '../controllers/customer/customerCouponController.js';
 
 // Generate human-friendly unique order number
 const generateOrderNumber = () => {
@@ -77,7 +78,7 @@ const calculateOrderPricing = async (items = [], couponCode = null) => {
     });
 
     if (coupon) {
-      const validation = coupon.isValidForAmount(subtotal);
+      const validation = validateCouponForAmount(coupon, subtotal);
       if (validation.valid) {
         discountAmount = validation.discountAmount;
         appliedCoupon = coupon;
@@ -116,7 +117,7 @@ const restockInventory = async (items) => {
   }
 };
 
-module.exports = {
+export {
   generateOrderNumber,
   calculateOrderPricing,
   deductInventory,

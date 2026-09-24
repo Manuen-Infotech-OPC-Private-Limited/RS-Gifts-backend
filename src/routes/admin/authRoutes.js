@@ -1,16 +1,14 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const {
-  loginAdmin,
+import { loginAdmin,
   getAdminProfile,
   updateAdminProfile,
-  registerInitialAdmin,
-} = require('../../controllers/admin/authController');
-const { protect, adminOnly } = require('../../middlewares/authMiddleware');
+  registerInitialAdmin, } from '../../controllers/admin/authController.js';
+import { protect, adminOnly } from '../../middlewares/authMiddleware.js';
 
 router.post('/login', loginAdmin);
 router.post('/register-initial', registerInitialAdmin);
 router.get('/profile', protect, adminOnly, getAdminProfile);
 router.put('/profile', protect, adminOnly, updateAdminProfile);
 
-module.exports = router;
+export default router;

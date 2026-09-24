@@ -1,4 +1,4 @@
-const Product = require('../../models/Product');
+import Product from '../../models/Product.js';
 
 // @desc    Get all products (Admin view with filtering and search)
 // @route   GET /api/admin/products
@@ -130,8 +130,14 @@ const createProduct = async (req, res) => {
       });
     }
 
+    // Auto-generate slug if not provided
+    const productSlug = (req.body.slug && req.body.slug.trim() !== '')
+      ? req.body.slug.trim().toLowerCase()
+      : title.toLowerCase().trim().replace(/[^\w ]+/g, '').replace(/ +/g, '-') + '-' + Math.floor(1000 + Math.random() * 9000);
+
     const newProduct = await Product.create({
       title: title.trim(),
+      slug: productSlug,
       sku: productSku,
       description: description || '',
       category: category || 'Gifts',
@@ -202,6 +208,11 @@ const updateProduct = async (req, res) => {
       updateData.lowStockThreshold = Number(updateData.lowStockThreshold);
     }
     if (updateData.sku) updateData.sku = updateData.sku.toUpperCase();
+
+    // Auto-generate updated slug if title changes and no new slug is provided
+    if (updateData.title && !updateData.slug && updateData.title.trim() !== product.title) {
+      updateData.slug = updateData.title.toLowerCase().trim().replace(/[^\w ]+/g, '').replace(/ +/g, '-') + '-' + Math.floor(1000 + Math.random() * 9000);
+    }
 
     const updated = await Product.findByIdAndUpdate(
       req.params.id,
@@ -343,7 +354,7 @@ const updateProductStock = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   getProducts,
   getProductById,
   createProduct,

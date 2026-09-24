@@ -1,5 +1,6 @@
-const User = require('../../models/User');
-const generateToken = require('../../utils/generateToken');
+import bcrypt from 'bcryptjs';
+import User from '../../models/User.js';
+import generateToken from '../../utils/generateToken.js';
 
 // @desc    Register a new customer account
 // @route   POST /api/customer/auth/register
@@ -25,10 +26,14 @@ const registerCustomer = async (req, res) => {
       });
     }
 
+    // Hash password directly in controller
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
     const customer = await User.create({
       name: name.trim(),
       email: cleanEmail,
-      password,
+      password: hashedPassword,
       phone: phone || '',
       role: 'customer',
       isActive: true,
@@ -88,7 +93,8 @@ const loginCustomer = async (req, res) => {
       });
     }
 
-    const isMatch = await customer.comparePassword(password);
+    // Compare password hash directly in controller
+    const isMatch = await bcrypt.compare(password, customer.password);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -267,7 +273,7 @@ const deleteCustomerAddress = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   registerCustomer,
   loginCustomer,
   getCustomerProfile,

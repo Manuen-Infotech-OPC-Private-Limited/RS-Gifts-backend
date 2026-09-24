@@ -1,4 +1,4 @@
-const Occasion = require('../../models/Occasion');
+import Occasion from '../../models/Occasion.js';
 
 // @desc    Get all occasions
 // @route   GET /api/admin/occasions
@@ -136,7 +136,7 @@ const deleteOccasion = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   getOccasions,
   createOccasion,
   updateOccasion,

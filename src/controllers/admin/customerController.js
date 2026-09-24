@@ -1,5 +1,5 @@
-const User = require('../../models/User');
-const Order = require('../../models/Order');
+import User from '../../models/User.js';
+import Order from '../../models/Order.js';
 
 // @desc    Get all customers with aggregated spending and order counts
 // @route   GET /api/admin/customers
@@ -144,7 +144,7 @@ const toggleCustomerStatus = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   getCustomers,
   getCustomerById,
   toggleCustomerStatus,

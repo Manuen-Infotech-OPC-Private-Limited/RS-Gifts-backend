@@ -1,5 +1,35 @@
-const Review = require('../../models/Review');
-const Product = require('../../models/Product');
+import Review from '../../models/Review.js';
+import Product from '../../models/Product.js';
+
+// Calculate and update product average rating
+const updateProductAverageRating = async (productId) => {
+  try {
+    const stats = await Review.aggregate([
+      { $match: { product: productId, isApproved: true } },
+      {
+        $group: {
+          _id: '$product',
+          avgRating: { $avg: '$rating' },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    if (stats.length > 0) {
+      await Product.findByIdAndUpdate(productId, {
+        'ratings.average': Math.round(stats[0].avgRating * 10) / 10,
+        'ratings.count': stats[0].count,
+      });
+    } else {
+      await Product.findByIdAndUpdate(productId, {
+        'ratings.average': 0,
+        'ratings.count': 0,
+      });
+    }
+  } catch (error) {
+    console.error('Error recalculating product average rating:', error);
+  }
+};
 
 // @desc    Submit a review for a gift
 // @route   POST /api/customer/reviews
@@ -35,6 +65,9 @@ const createCustomerReview = async (req, res) => {
       comment: comment.trim(),
       isApproved: true, // Default to approved or moderation queue
     });
+
+    // Update product rating stats in controller
+    await updateProductAverageRating(product._id);
 
     res.status(201).json({
       success: true,
@@ -72,7 +105,8 @@ const getProductReviews = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   createCustomerReview,
   getProductReviews,
+  updateProductAverageRating,
 };

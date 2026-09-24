@@ -1,5 +1,5 @@
-const Order = require('../../models/Order');
-const { restockInventory } = require('../../services/orderService');
+import Order from '../../models/Order.js';
+import { restockInventory } from '../../services/orderService.js';
 
 // @desc    Get all orders with filtering and search
 // @route   GET /api/admin/orders
@@ -168,7 +168,7 @@ const updatePaymentStatus = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   getOrders,
   getOrderById,
   updateOrderStatus,

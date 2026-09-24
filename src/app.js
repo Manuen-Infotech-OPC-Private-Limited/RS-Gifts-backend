@@ -1,10 +1,14 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const path = require('path');
-const apiRoutes = require('./routes');
-const { notFound, errorHandler } = require('./middlewares/errorMiddleware');
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+import apiRoutes from './routes/index.js';
+import { notFound, errorHandler } from './middlewares/errorMiddleware.js';
 
 const app = express();
 
@@ -77,4 +81,4 @@ app.use('/api', apiRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-module.exports = app;
+export default app;

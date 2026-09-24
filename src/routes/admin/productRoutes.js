@@ -1,16 +1,14 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const {
-  getProducts,
+import { getProducts,
   getProductById,
   createProduct,
   updateProduct,
   deleteProduct,
   toggleProductActive,
   toggleProductFeatured,
-  updateProductStock,
-} = require('../../controllers/admin/productController');
-const { protect, adminOnly } = require('../../middlewares/authMiddleware');
+  updateProductStock, } from '../../controllers/admin/productController.js';
+import { protect, adminOnly } from '../../middlewares/authMiddleware.js';
 
 router.use(protect, adminOnly);
 
@@ -27,4 +25,4 @@ router.patch('/:id/toggle-active', toggleProductActive);
 router.patch('/:id/toggle-featured', toggleProductFeatured);
 router.patch('/:id/stock', updateProductStock);
 
-module.exports = router;
+export default router;

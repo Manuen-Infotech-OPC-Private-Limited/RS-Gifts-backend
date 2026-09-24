@@ -1,14 +1,12 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const {
-  registerCustomer,
+import { registerCustomer,
   loginCustomer,
   getCustomerProfile,
   updateCustomerProfile,
   addCustomerAddress,
-  deleteCustomerAddress,
-} = require('../../controllers/customer/customerAuthController');
-const { protect } = require('../../middlewares/authMiddleware');
+  deleteCustomerAddress, } from '../../controllers/customer/customerAuthController.js';
+import { protect } from '../../middlewares/authMiddleware.js';
 
 router.post('/register', registerCustomer);
 router.post('/login', loginCustomer);
@@ -22,4 +20,4 @@ router.route('/profile')
 router.post('/addresses', addCustomerAddress);
 router.delete('/addresses/:addressId', deleteCustomerAddress);
 
-module.exports = router;
+export default router;

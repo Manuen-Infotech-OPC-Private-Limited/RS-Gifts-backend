@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const couponSchema = new mongoose.Schema({
   code: {
@@ -57,44 +57,5 @@ const couponSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Check coupon validity against cart amount
-couponSchema.methods.isValidForAmount = function (subtotal) {
-  if (!this.active) {
-    return { valid: false, message: 'Coupon is currently inactive' };
-  }
-
-  if (this.expiryDate && new Date(this.expiryDate) < new Date()) {
-    return { valid: false, message: 'Coupon has expired' };
-  }
-
-  if (this.usageLimit > 0 && this.usedCount >= this.usageLimit) {
-    return { valid: false, message: 'Coupon usage limit has been reached' };
-  }
-
-  if (subtotal < this.minOrderValue) {
-    return {
-      valid: false,
-      message: `Minimum order value of ₹${this.minOrderValue} required for this coupon`
-    };
-  }
-
-  let calculatedDiscount = 0;
-  if (this.discountType === 'percentage') {
-    calculatedDiscount = (subtotal * this.discountValue) / 100;
-    if (this.maxDiscount > 0 && calculatedDiscount > this.maxDiscount) {
-      calculatedDiscount = this.maxDiscount;
-    }
-  } else {
-    calculatedDiscount = Math.min(this.discountValue, subtotal);
-  }
-
-  return {
-    valid: true,
-    discountAmount: Math.round(calculatedDiscount),
-    code: this.code,
-    discountType: this.discountType,
-    discountValue: this.discountValue
-  };
-};
-
-module.exports = mongoose.model('Coupon', couponSchema);
+const Coupon = mongoose.model('Coupon', couponSchema);
+export default Coupon;

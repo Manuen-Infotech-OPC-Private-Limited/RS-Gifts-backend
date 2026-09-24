@@ -1,11 +1,9 @@
-const Order = require('../../models/Order');
-const Coupon = require('../../models/Coupon');
-const {
-  generateOrderNumber,
+import Order from '../../models/Order.js';
+import Coupon from '../../models/Coupon.js';
+import { generateOrderNumber,
   calculateOrderPricing,
   deductInventory,
-  restockInventory,
-} = require('../../services/orderService');
+  restockInventory, } from '../../services/orderService.js';
 
 // @desc    Place a new gift order (Checkout)
 // @route   POST /api/customer/orders
@@ -224,7 +222,7 @@ const cancelCustomerOrder = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   createCustomerOrder,
   getMyOrders,
   getCustomerOrderDetails,

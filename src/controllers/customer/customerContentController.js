@@ -1,7 +1,7 @@
-const Banner = require('../../models/Banner');
-const Category = require('../../models/Category');
-const Occasion = require('../../models/Occasion');
-const Setting = require('../../models/Setting');
+import Banner from '../../models/Banner.js';
+import Category from '../../models/Category.js';
+import Occasion from '../../models/Occasion.js';
+import Setting from '../../models/Setting.js';
 
 // @desc    Get active promotional banners
 // @route   GET /api/customer/content/banners
@@ -92,7 +92,7 @@ const getPublicSettings = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   getActiveBanners,
   getActiveCategories,
   getActiveOccasions,

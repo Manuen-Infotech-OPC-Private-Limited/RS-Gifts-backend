@@ -1,4 +1,4 @@
-const Banner = require('../../models/Banner');
+import Banner from '../../models/Banner.js';
 
 // @desc    Get all banners
 // @route   GET /api/admin/content/banners
@@ -151,7 +151,7 @@ const toggleBannerActive = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   getBanners,
   createBanner,
   updateBanner,

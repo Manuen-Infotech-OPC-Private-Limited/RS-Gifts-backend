@@ -1,15 +1,13 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const {
-  getActiveBanners,
+import { getActiveBanners,
   getActiveCategories,
   getActiveOccasions,
-  getPublicSettings,
-} = require('../../controllers/customer/customerContentController');
+  getPublicSettings, } from '../../controllers/customer/customerContentController.js';
 
 router.get('/banners', getActiveBanners);
 router.get('/categories', getActiveCategories);
 router.get('/occasions', getActiveOccasions);
 router.get('/settings', getPublicSettings);
 
-module.exports = router;
+export default router;

@@ -1,4 +1,5 @@
-const Review = require('../../models/Review');
+import Review from '../../models/Review.js';
+import { updateProductAverageRating } from '../customer/customerReviewController.js';
 
 // @desc    Get all reviews for moderation
 // @route   GET /api/admin/reviews
@@ -44,6 +45,9 @@ const toggleApproveReview = async (req, res) => {
 
     review.isApproved = !review.isApproved;
     await review.save();
+
+    // Recalculate average rating for the product
+    await updateProductAverageRating(review.product);
 
     res.status(200).json({
       success: true,
@@ -103,6 +107,9 @@ const deleteReview = async (req, res) => {
 
     await Review.findByIdAndDelete(req.params.id);
 
+    // Recalculate average rating for the product
+    await updateProductAverageRating(review.product);
+
     res.status(200).json({
       success: true,
       message: 'Review deleted successfully',
@@ -116,7 +123,7 @@ const deleteReview = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   getReviews,
   toggleApproveReview,
   replyToReview,

@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const occasionSchema = new mongoose.Schema({
   name: {
@@ -26,14 +26,5 @@ const occasionSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-occasionSchema.pre('validate', function (next) {
-  if (this.name && !this.slug) {
-    this.slug = this.name
-      .toLowerCase()
-      .replace(/[^\w ]+/g, '')
-      .replace(/ +/g, '-');
-  }
-  next();
-});
-
-module.exports = mongoose.model('Occasion', occasionSchema);
+const Occasion = mongoose.model('Occasion', occasionSchema);
+export default Occasion;

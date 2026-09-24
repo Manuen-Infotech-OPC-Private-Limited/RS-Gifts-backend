@@ -1,29 +1,31 @@
-const express = require('express');
+import { getActiveCategories, getActiveOccasions } from '../controllers/customer/customerContentController.js';
+import mongoose from 'mongoose';
+import express from 'express';
 const router = express.Router();
 
 // Admin Routes
-const adminAuthRoutes = require('./admin/authRoutes');
-const adminDashboardRoutes = require('./admin/dashboardRoutes');
-const adminProductRoutes = require('./admin/productRoutes');
-const adminCategoryRoutes = require('./admin/categoryRoutes');
-const adminOccasionRoutes = require('./admin/occasionRoutes');
-const adminOrderRoutes = require('./admin/orderRoutes');
-const adminCustomerRoutes = require('./admin/customerRoutes');
-const adminCouponRoutes = require('./admin/couponRoutes');
-const adminBannerRoutes = require('./admin/bannerRoutes');
-const adminReviewRoutes = require('./admin/reviewRoutes');
-const adminSettingRoutes = require('./admin/settingRoutes');
+import adminAuthRoutes from './admin/authRoutes.js';
+import adminDashboardRoutes from './admin/dashboardRoutes.js';
+import adminProductRoutes from './admin/productRoutes.js';
+import adminCategoryRoutes from './admin/categoryRoutes.js';
+import adminOccasionRoutes from './admin/occasionRoutes.js';
+import adminOrderRoutes from './admin/orderRoutes.js';
+import adminCustomerRoutes from './admin/customerRoutes.js';
+import adminCouponRoutes from './admin/couponRoutes.js';
+import adminBannerRoutes from './admin/bannerRoutes.js';
+import adminReviewRoutes from './admin/reviewRoutes.js';
+import adminSettingRoutes from './admin/settingRoutes.js';
 
 // Customer Routes
-const customerAuthRoutes = require('./customer/customerAuthRoutes');
-const customerProductRoutes = require('./customer/customerProductRoutes');
-const customerOrderRoutes = require('./customer/customerOrderRoutes');
-const customerCouponRoutes = require('./customer/customerCouponRoutes');
-const customerReviewRoutes = require('./customer/customerReviewRoutes');
-const customerContentRoutes = require('./customer/customerContentRoutes');
+import customerAuthRoutes from './customer/customerAuthRoutes.js';
+import customerProductRoutes from './customer/customerProductRoutes.js';
+import customerOrderRoutes from './customer/customerOrderRoutes.js';
+import customerCouponRoutes from './customer/customerCouponRoutes.js';
+import customerReviewRoutes from './customer/customerReviewRoutes.js';
+import customerContentRoutes from './customer/customerContentRoutes.js';
 
 // Upload Routes
-const uploadRoutes = require('./uploadRoutes');
+import uploadRoutes from './uploadRoutes.js';
 
 // Health Check Endpoint
 router.get('/health', (req, res) => {
@@ -33,7 +35,7 @@ router.get('/health', (req, res) => {
     service: 'RS-Gifts API',
     timestamp: new Date().toISOString(),
     uptime: `${process.uptime().toFixed(1)}s`,
-    database: require('mongoose').connection.readyState === 1 ? 'CONNECTED' : 'DISCONNECTED',
+    database: mongoose.connection.readyState === 1 ? 'CONNECTED' : 'DISCONNECTED',
   });
 });
 
@@ -63,14 +65,8 @@ router.use('/upload', uploadRoutes);
 
 // Direct compatibility aliases (for frontends calling /api/products, /api/orders, etc.)
 router.use('/products', customerProductRoutes);
-router.use('/categories', (req, res, next) => {
-  const { getActiveCategories } = require('../controllers/customer/customerContentController');
-  getActiveCategories(req, res, next);
-});
-router.use('/occasions', (req, res, next) => {
-  const { getActiveOccasions } = require('../controllers/customer/customerContentController');
-  getActiveOccasions(req, res, next);
-});
+router.use('/categories', getActiveCategories);
+router.use('/occasions', getActiveOccasions);
 router.use('/coupons', customerCouponRoutes);
 
-module.exports = router;
+export default router;

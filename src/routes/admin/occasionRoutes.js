@@ -1,12 +1,10 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const {
-  getOccasions,
+import { getOccasions,
   createOccasion,
   updateOccasion,
-  deleteOccasion,
-} = require('../../controllers/admin/occasionController');
-const { protect, adminOnly } = require('../../middlewares/authMiddleware');
+  deleteOccasion, } from '../../controllers/admin/occasionController.js';
+import { protect, adminOnly } from '../../middlewares/authMiddleware.js';
 
 router.use(protect, adminOnly);
 
@@ -18,4 +16,4 @@ router.route('/:id')
   .put(updateOccasion)
   .delete(deleteOccasion);
 
-module.exports = router;
+export default router;
