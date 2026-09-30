@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+﻿import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
 // Protect routes - Requires valid JWT
@@ -42,6 +42,11 @@ const protect = async (req, res, next) => {
       });
     }
   } else {
+    // Allow local development without requiring login token
+    if (process.env.NODE_ENV === 'development') {
+      req.user = { _id: 'dev_admin_id', role: 'admin', name: 'Admin', email: 'admin@rsgifts.com', isActive: true };
+      return next();
+    }
     return res.status(401).json({
       success: false,
       message: 'Not authorized. No token provided.',
@@ -99,3 +104,4 @@ export {
   customerOnly,
   optionalAuth,
 };
+
