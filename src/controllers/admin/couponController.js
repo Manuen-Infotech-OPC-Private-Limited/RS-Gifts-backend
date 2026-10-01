@@ -30,13 +30,14 @@ const createCoupon = async (req, res) => {
       discountType,
       discountValue,
       minOrderValue,
+      minSpend,
       maxDiscount,
       expiryDate,
       usageLimit,
       active,
     } = req.body;
 
-    if (!code || !discountValue) {
+    if (!code || discountValue === undefined) {
       return res.status(400).json({
         success: false,
         message: 'Coupon code and discount value are required',
@@ -44,20 +45,33 @@ const createCoupon = async (req, res) => {
     }
 
     const cleanCode = code.trim().toUpperCase();
+    const finalType = (discountType === 'fixed' || discountType === 'flat') ? 'flat' : 'percentage';
+    const finalMinOrder = minOrderValue !== undefined ? Number(minOrderValue) : (minSpend !== undefined ? Number(minSpend) : 0);
+
     const existing = await Coupon.findOne({ code: cleanCode });
     if (existing) {
-      return res.status(400).json({
-        success: false,
-        message: `Coupon with code "${cleanCode}" already exists`,
+      existing.discountType = finalType;
+      existing.discountValue = Number(discountValue);
+      existing.minOrderValue = finalMinOrder;
+      if (maxDiscount !== undefined) existing.maxDiscount = Number(maxDiscount);
+      if (expiryDate !== undefined) existing.expiryDate = expiryDate || null;
+      if (usageLimit !== undefined) existing.usageLimit = Number(usageLimit);
+      if (active !== undefined) existing.active = Boolean(active);
+      if (description !== undefined) existing.description = description;
+      const updated = await existing.save();
+      return res.status(200).json({
+        success: true,
+        message: `Coupon "${updated.code}" updated successfully`,
+        coupon: updated,
       });
     }
 
     const coupon = await Coupon.create({
       code: cleanCode,
       description: description || '',
-      discountType: discountType || 'percentage',
+      discountType: finalType,
       discountValue: Number(discountValue),
-      minOrderValue: minOrderValue ? Number(minOrderValue) : 0,
+      minOrderValue: finalMinOrder,
       maxDiscount: maxDiscount ? Number(maxDiscount) : 0,
       expiryDate: expiryDate || null,
       usageLimit: usageLimit ? Number(usageLimit) : 0,
@@ -82,17 +96,42 @@ const createCoupon = async (req, res) => {
 // @access  Private (Admin)
 const updateCoupon = async (req, res) => {
   try {
-    const coupon = await Coupon.findById(req.params.id);
+    let coupon = null;
+    const targetId = req.params.id;
+
+    // Try finding by ObjectId or by code
+    if (targetId && targetId.match(/^[0-9a-fA-F]{24}$/)) {
+      coupon = await Coupon.findById(targetId);
+    }
+    if (!coupon && req.body.code) {
+      coupon = await Coupon.findOne({ code: req.body.code.trim().toUpperCase() });
+    }
+
     if (!coupon) {
-      return res.status(404).json({
-        success: false,
-        message: 'Coupon not found',
+      // If coupon doesn't exist yet, create it as upsert
+      const cleanCode = (req.body.code || targetId).trim().toUpperCase();
+      const finalType = (req.body.discountType === 'fixed' || req.body.discountType === 'flat') ? 'flat' : 'percentage';
+      const created = await Coupon.create({
+        code: cleanCode,
+        description: req.body.description || '',
+        discountType: finalType,
+        discountValue: Number(req.body.discountValue) || 0,
+        minOrderValue: Number(req.body.minOrderValue ?? req.body.minSpend ?? 0),
+        maxDiscount: Number(req.body.maxDiscount || 0),
+        expiryDate: req.body.expiryDate || null,
+        usageLimit: Number(req.body.usageLimit || 0),
+        active: req.body.active !== undefined ? Boolean(req.body.active) : true,
+      });
+      return res.status(200).json({
+        success: true,
+        message: `Coupon "${created.code}" saved successfully`,
+        coupon: created,
       });
     }
 
     if (req.body.code && req.body.code.trim().toUpperCase() !== coupon.code) {
       const existing = await Coupon.findOne({ code: req.body.code.trim().toUpperCase() });
-      if (existing) {
+      if (existing && existing._id.toString() !== coupon._id.toString()) {
         return res.status(400).json({
           success: false,
           message: `Coupon code "${req.body.code}" is already in use`,
@@ -102,9 +141,13 @@ const updateCoupon = async (req, res) => {
     }
 
     if (req.body.description !== undefined) coupon.description = req.body.description;
-    if (req.body.discountType) coupon.discountType = req.body.discountType;
+    if (req.body.discountType) {
+      coupon.discountType = (req.body.discountType === 'fixed' || req.body.discountType === 'flat') ? 'flat' : 'percentage';
+    }
     if (req.body.discountValue !== undefined) coupon.discountValue = Number(req.body.discountValue);
-    if (req.body.minOrderValue !== undefined) coupon.minOrderValue = Number(req.body.minOrderValue);
+    if (req.body.minOrderValue !== undefined || req.body.minSpend !== undefined) {
+      coupon.minOrderValue = Number(req.body.minOrderValue ?? req.body.minSpend ?? 0);
+    }
     if (req.body.maxDiscount !== undefined) coupon.maxDiscount = Number(req.body.maxDiscount);
     if (req.body.expiryDate !== undefined) coupon.expiryDate = req.body.expiryDate || null;
     if (req.body.usageLimit !== undefined) coupon.usageLimit = Number(req.body.usageLimit);

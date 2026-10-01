@@ -142,6 +142,10 @@ const createProduct = async (req, res) => {
       description: description || '',
       category: category || 'Gifts',
       occasions: occasions || [],
+      targetPages: Array.isArray(req.body.targetPages)
+        ? req.body.targetPages
+        : (req.body.targetPage ? [req.body.targetPage] : (category ? [category] : [])),
+      targetPage: req.body.targetPage || (Array.isArray(req.body.targetPages) && req.body.targetPages[0]) || category || '',
       price: Number(price),
       salePrice: salePrice !== undefined && salePrice !== '' ? Number(salePrice) : Number(price),
       stock: stock !== undefined ? Number(stock) : 0,

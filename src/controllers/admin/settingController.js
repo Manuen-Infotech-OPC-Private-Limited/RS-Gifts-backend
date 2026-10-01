@@ -33,11 +33,11 @@ const updateSettings = async (req, res) => {
     }
 
     const {
-      storeName,
-      storeTagline,
-      supportEmail,
       contactPhone,
+      contactEmail,
+      supportEmail, // backward compatibility
       storeAddress,
+      supportHours,
       currencySymbol,
       standardShippingFee,
       freeShippingThreshold,
@@ -48,11 +48,11 @@ const updateSettings = async (req, res) => {
       adminEmail,
     } = req.body;
 
-    if (storeName !== undefined) settings.storeName = storeName;
-    if (storeTagline !== undefined) settings.storeTagline = storeTagline;
-    if (supportEmail !== undefined) settings.supportEmail = supportEmail;
     if (contactPhone !== undefined) settings.contactPhone = contactPhone;
+    if (contactEmail !== undefined) settings.contactEmail = contactEmail;
+    else if (supportEmail !== undefined) settings.contactEmail = supportEmail;
     if (storeAddress !== undefined) settings.storeAddress = storeAddress;
+    if (supportHours !== undefined) settings.supportHours = supportHours;
     if (currencySymbol !== undefined) settings.currencySymbol = currencySymbol;
     if (standardShippingFee !== undefined) settings.standardShippingFee = Number(standardShippingFee);
     if (freeShippingThreshold !== undefined) settings.freeShippingThreshold = Number(freeShippingThreshold);

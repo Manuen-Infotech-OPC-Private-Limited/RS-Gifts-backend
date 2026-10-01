@@ -33,6 +33,15 @@ const productSchema = new mongoose.Schema({
     type: String,
     trim: true,
   }],
+  targetPages: [{
+    type: String,
+    trim: true,
+  }],
+  targetPage: {
+    type: String,
+    default: '',
+    trim: true,
+  },
   price: {
     type: Number,
     required: [true, 'Price is required'],

@@ -1,15 +1,21 @@
+import dotenv from 'dotenv';
 import { cloudinary, configureCloudinary } from '../config/cloudinary.js';
 import Setting from '../models/Setting.js';
 import fs from 'fs';
 
 const uploadToCloudinary = async (filePath, customFolder = 'rs_gifts') => {
+  dotenv.config();
   // Check if credentials exist in Settings or env
   const setting = await Setting.findOne();
-  if (setting && setting.cloudinaryCloudName) {
+  const cloudName = (setting && setting.cloudinaryCloudName) || process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+  if (cloudName && apiKey && apiSecret) {
     configureCloudinary({
-      cloudName: setting.cloudinaryCloudName,
-      apiKey: process.env.CLOUDINARY_API_KEY,
-      apiSecret: process.env.CLOUDINARY_API_SECRET,
+      cloudName,
+      apiKey,
+      apiSecret,
     });
   }
 

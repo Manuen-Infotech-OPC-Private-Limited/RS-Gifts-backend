@@ -94,7 +94,58 @@ const validateCoupon = async (req, res) => {
   }
 };
 
+// @desc    Get active public coupons and primary promotional discount
+// @route   GET /api/customer/coupons
+// @route   GET /api/customer/coupons/active
+// @access  Public
+const getActiveCoupons = async (req, res) => {
+  try {
+    const now = new Date();
+    const coupons = await Coupon.find({
+      active: true,
+      $or: [
+        { expiryDate: null },
+        { expiryDate: { $gte: now } },
+      ],
+    }).sort({ updatedAt: -1, createdAt: -1 });
+
+    let activeCoupon = null;
+    let discountDisplay = '';
+
+    if (coupons.length > 0) {
+      const top = coupons[0];
+      const isFlat = top.discountType === 'flat' || top.discountType === 'fixed';
+      discountDisplay = isFlat ? `₹${top.discountValue} OFF` : `${top.discountValue}% OFF`;
+
+      activeCoupon = {
+        id: top._id,
+        _id: top._id,
+        code: top.code,
+        discountType: isFlat ? 'flat' : 'percentage',
+        discountValue: top.discountValue,
+        discountLabel: discountDisplay,
+        minOrderValue: top.minOrderValue || 0,
+        description: top.description || '',
+      };
+    }
+
+    res.status(200).json({
+      success: true,
+      count: coupons.length,
+      coupons,
+      activeCoupon,
+      discountDisplay,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 export {
   validateCoupon,
   validateCouponForAmount,
+  getActiveCoupons,
 };

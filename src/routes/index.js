@@ -59,14 +59,16 @@ router.use('/customer/orders', customerOrderRoutes);
 router.use('/customer/coupons', customerCouponRoutes);
 router.use('/customer/reviews', customerReviewRoutes);
 router.use('/customer/content', customerContentRoutes);
+router.use('/customer', customerContentRoutes);
 
 // Direct Uploads Route
 router.use('/upload', uploadRoutes);
 
-// Direct compatibility aliases (for frontends calling /api/products, /api/orders, etc.)
+// Direct compatibility aliases (for frontends calling /api/products, /api/orders, /api/banners, etc.)
 router.use('/products', customerProductRoutes);
-router.use('/categories', getActiveCategories);
-router.use('/occasions', getActiveOccasions);
+router.use('/categories', customerContentRoutes);
+router.use('/occasions', customerContentRoutes);
+router.use('/banners', customerContentRoutes);
 router.use('/coupons', customerCouponRoutes);
 
 export default router;

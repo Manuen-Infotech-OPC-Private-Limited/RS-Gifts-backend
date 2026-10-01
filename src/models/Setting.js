@@ -1,29 +1,24 @@
 import mongoose from 'mongoose';
 
 const settingSchema = new mongoose.Schema({
-  storeName: {
-    type: String,
-    default: 'RS Gifts',
-    trim: true,
-  },
-  storeTagline: {
-    type: String,
-    default: 'Memorable gifts for every occasion',
-    trim: true,
-  },
-  supportEmail: {
-    type: String,
-    default: 'support@rsgifts.com',
-    trim: true,
-  },
   contactPhone: {
     type: String,
-    default: '+91 98765 43210',
+    default: '',
+    trim: true,
+  },
+  contactEmail: {
+    type: String,
+    default: '',
     trim: true,
   },
   storeAddress: {
     type: String,
-    default: '123 Gift Street, Celebration City, India',
+    default: '',
+    trim: true,
+  },
+  supportHours: {
+    type: String,
+    default: '',
     trim: true,
   },
   currencySymbol: {
@@ -57,12 +52,12 @@ const settingSchema = new mongoose.Schema({
   },
   adminName: {
     type: String,
-    default: 'RS Gifts Admin',
+    default: '',
     trim: true,
   },
   adminEmail: {
     type: String,
-    default: 'admin@rsgifts.com',
+    default: '',
     trim: true,
   },
 }, {

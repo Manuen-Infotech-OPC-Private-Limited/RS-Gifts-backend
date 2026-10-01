@@ -73,11 +73,10 @@ const getPublicSettings = async (req, res) => {
     res.status(200).json({
       success: true,
       settings: {
-        storeName: settings.storeName,
-        storeTagline: settings.storeTagline,
-        supportEmail: settings.supportEmail,
-        contactPhone: settings.contactPhone,
-        storeAddress: settings.storeAddress,
+        contactPhone: settings.contactPhone || '',
+        contactEmail: settings.contactEmail || settings.supportEmail || '',
+        storeAddress: settings.storeAddress || '',
+        supportHours: settings.supportHours || '',
         currencySymbol: settings.currencySymbol,
         standardShippingFee: settings.standardShippingFee,
         freeShippingThreshold: settings.freeShippingThreshold,

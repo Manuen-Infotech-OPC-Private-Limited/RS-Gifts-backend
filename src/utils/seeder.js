@@ -116,21 +116,43 @@ const initialCoupons = [
 
 const initialBanners = [
   {
-    title: 'Cherish Every Moment',
-    subtitle: 'Thoughtful curated gifts, personalized with love for your special ones.',
-    image: '',
-    link: '/categories/personalized-gifts',
+    title: "More Than Gifts, It's Emotions",
+    subtitle: 'Thoughtful gifts for every occasion. Because every moment deserves something special.',
+    image: '/images/hero-banner-1.png',
+    link: '/gifts',
+    buttonText: 'Shop Now',
     position: 'hero',
     order: 1,
     active: true,
   },
   {
-    title: 'Festive Luxury Hampers',
-    subtitle: 'Exclusive handcrafted sweets, scented candles, and premium hampers.',
-    image: '',
-    link: '/categories/flowers-and-hampers',
+    title: 'Crafted With Love, Wrapped With Care',
+    subtitle: 'Discover artisan chocolates, scented candles & bespoke gift baskets made to celebrate life’s moments.',
+    image: '/images/hero-banner-2.jpg',
+    link: '/hampers',
+    buttonText: 'Explore Hampers',
     position: 'hero',
     order: 2,
+    active: true,
+  },
+  {
+    title: 'Personalized Gifts, Timeless Memories',
+    subtitle: 'Engraved wooden keepsakes, photo treasures & heirloom gifts designed to tell your unique story.',
+    image: '/images/hero-banner-3.jpg',
+    link: '/personalized-gifts',
+    buttonText: 'Personalize Now',
+    position: 'hero',
+    order: 3,
+    active: true,
+  },
+  {
+    title: 'Floral Whispers, Sweet Surprises',
+    subtitle: 'Exquisite hand-tied pastel peonies, roses & artisanal macarons delivered fresh to your loved ones.',
+    image: '/images/hero-banner-4.jpg',
+    link: '/flowers-hampers',
+    buttonText: 'Order Flowers',
+    position: 'hero',
+    order: 4,
     active: true,
   },
 ];
@@ -266,7 +288,7 @@ const seedDatabase = async () => {
       const hashedPassword = await bcrypt.hash('Admin@123', salt);
 
       await User.create({
-        name: 'RS Gifts Admin',
+        name: 'RS Gifts',
         email: 'admin@rsgifts.com',
         password: hashedPassword,
         role: 'admin',
@@ -284,17 +306,16 @@ const seedDatabase = async () => {
     const existingSetting = await Setting.findOne();
     if (!existingSetting) {
       await Setting.create({
-        storeName: 'RS Gifts',
-        storeTagline: 'Memorable gifts for every occasion',
-        supportEmail: 'support@rsgifts.com',
-        contactPhone: '+91 98765 43210',
-        storeAddress: '123 Gift Street, Celebration City, India',
+        contactPhone: '',
+        contactEmail: '',
+        storeAddress: '',
+        supportHours: '',
         currencySymbol: '₹',
         standardShippingFee: 50,
         freeShippingThreshold: 999,
         cashOnDeliveryEnabled: true,
-        adminName: 'RS Gifts Super Admin',
-        adminEmail: 'admin@rsgifts.com',
+        adminName: '',
+        adminEmail: '',
       });
       console.log('Store settings initialized.');
     }

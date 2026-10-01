@@ -1,21 +1,70 @@
 import Product from '../../models/Product.js';
 import Review from '../../models/Review.js';
+import Coupon from '../../models/Coupon.js';
+
+// Helper to retrieve currently active storewide promotional discount
+const getActiveStoreDiscount = async () => {
+  try {
+    const now = new Date();
+    const coupon = await Coupon.findOne({
+      active: true,
+      $or: [
+        { expiryDate: null },
+        { expiryDate: { $gte: now } },
+      ],
+    }).sort({ updatedAt: -1, createdAt: -1 });
+
+    if (!coupon) return null;
+    const isFlat = coupon.discountType === 'flat' || coupon.discountType === 'fixed';
+    return {
+      code: coupon.code,
+      discountType: isFlat ? 'flat' : 'percentage',
+      discountValue: coupon.discountValue,
+      label: isFlat ? `₹${coupon.discountValue} OFF` : `${coupon.discountValue}% OFF`,
+      minOrderValue: coupon.minOrderValue || 0,
+    };
+  } catch {
+    return null;
+  }
+};
 
 // @desc    Get active public products with filtering, search, and sorting
 // @route   GET /api/customer/products
 // @access  Public
 const getCustomerProducts = async (req, res) => {
   try {
-    const { category, occasion, search, minPrice, maxPrice, inStock, sort, page = 1, limit = 20 } = req.query;
+    const { category, occasion, targetPage, search, minPrice, maxPrice, inStock, sort, page = 1, limit = 50, featured } = req.query;
 
     const filter = { active: true };
 
-    if (category && category !== 'ALL') {
-      filter.category = category;
+    if (featured === 'true' || featured === true) {
+      filter.featured = true;
+    }
+
+    if (targetPage && targetPage !== 'ALL') {
+      const cleanTarget = targetPage.replace(/[-_]/g, ' ').trim();
+      const escapedTarget = cleanTarget.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const targetRegex = new RegExp(`^${escapedTarget}$`, 'i');
+      filter.$or = [
+        { targetPages: { $elemMatch: { $regex: targetRegex } } },
+        { targetPage: { $regex: targetRegex } },
+        { category: { $regex: targetRegex } },
+      ];
+    } else if (category && category !== 'ALL') {
+      const cleanCat = category.replace(/[-_]/g, ' ').trim();
+      const escapedCat = cleanCat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const catRegex = new RegExp(`^${escapedCat}$`, 'i');
+      filter.$or = [
+        { targetPages: { $elemMatch: { $regex: catRegex } } },
+        { targetPage: { $regex: catRegex } },
+        { category: { $regex: catRegex } },
+      ];
     }
 
     if (occasion && occasion !== 'ALL') {
-      filter.occasions = occasion;
+      const cleanOcc = occasion.replace(/[-_]/g, ' ').trim();
+      const escapedOcc = cleanOcc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      filter.occasions = { $elemMatch: { $regex: new RegExp(`^${escapedOcc}$`, 'i') } };
     }
 
     if (minPrice || maxPrice) {
@@ -57,14 +106,26 @@ const getCustomerProducts = async (req, res) => {
 
     const total = await Product.countDocuments(filter);
     const products = await query.skip(skip).limit(limitNum);
+    const activeDiscount = await getActiveStoreDiscount();
+
+    const formattedProducts = products.map((prod) => {
+      const p = prod.toObject ? prod.toObject() : { ...prod };
+      if (activeDiscount) {
+        p.discount = activeDiscount.label;
+        p.activeCoupon = activeDiscount;
+      }
+      return p;
+    });
 
     res.status(200).json({
       success: true,
-      count: products.length,
+      count: formattedProducts.length,
       total,
       page: pageNum,
       pages: Math.ceil(total / limitNum),
-      products,
+      activeCoupon: activeDiscount,
+      discountDisplay: activeDiscount?.label || '',
+      products: formattedProducts,
     });
   } catch (error) {
     res.status(500).json({
@@ -83,10 +144,23 @@ const getFeaturedProducts = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(8);
 
+    const activeDiscount = await getActiveStoreDiscount();
+
+    const formattedProducts = products.map((prod) => {
+      const p = prod.toObject ? prod.toObject() : { ...prod };
+      if (activeDiscount) {
+        p.discount = activeDiscount.label;
+        p.activeCoupon = activeDiscount;
+      }
+      return p;
+    });
+
     res.status(200).json({
       success: true,
-      count: products.length,
-      products,
+      count: formattedProducts.length,
+      activeCoupon: activeDiscount,
+      discountDisplay: activeDiscount?.label || '',
+      products: formattedProducts,
     });
   } catch (error) {
     res.status(500).json({

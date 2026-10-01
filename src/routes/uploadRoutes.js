@@ -1,5 +1,6 @@
 import express from 'express';
 const router = express.Router();
+import dotenv from 'dotenv';
 import upload from '../middlewares/uploadMiddleware.js';
 import { uploadToCloudinary } from '../services/cloudinaryService.js';
 import Setting from '../models/Setting.js';
@@ -9,6 +10,7 @@ import Setting from '../models/Setting.js';
 // @access  Public / Admin
 router.post('/', upload.single('image'), async (req, res) => {
   try {
+    dotenv.config();
     if (!req.file) {
       return res.status(400).json({
         success: false,

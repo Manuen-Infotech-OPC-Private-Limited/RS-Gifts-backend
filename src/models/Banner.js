@@ -19,6 +19,10 @@ const bannerSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  buttonText: {
+    type: String,
+    default: 'Shop Now',
+  },
   position: {
     type: String,
     enum: ['hero', 'promotional', 'popup', 'footer'],
