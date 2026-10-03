@@ -53,7 +53,14 @@ const createCustomerReview = async (req, res) => {
       });
     }
 
-    const name = req.user ? req.user.name : (customerName || 'Verified Buyer');
+    let name = customerName?.trim();
+    if (!name || /^\s*rs\s*gifts?\s*$/i.test(name)) {
+      if (req.user && req.user.name && !/^\s*rs\s*gifts?\s*$/i.test(req.user.name)) {
+        name = req.user.name.trim();
+      } else {
+        name = 'Verified Customer';
+      }
+    }
     const email = req.user ? req.user.email : (customerEmail || '');
 
     const review = await Review.create({
@@ -63,7 +70,7 @@ const createCustomerReview = async (req, res) => {
       customerEmail: email,
       rating: Number(rating),
       comment: comment.trim(),
-      isApproved: true, // Default to approved or moderation queue
+      isApproved: false, // Must be approved by admin before showing
     });
 
     // Update product rating stats in controller
