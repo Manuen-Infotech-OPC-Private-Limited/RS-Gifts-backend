@@ -201,7 +201,9 @@ const updateOrderTracking = async (req, res) => {
       order.statusHistory.push({
         status: 'Shipped',
         timestamp: new Date(),
-        note: `Dispatched via ${carrier || 'Express Courier'} (${trackingNumber})`,
+        note: carrier
+          ? `Dispatched via ${carrier} (${trackingNumber})`
+          : `Dispatched with tracking #${trackingNumber}`,
       });
     }
 
