@@ -79,7 +79,8 @@ const getDashboardStats = async (req, res) => {
       lowStockAlerts: lowStockProducts.map((p) => ({
         id: p._id,
         title: p.title,
-        sku: p.sku,
+        productId: p.productId || p.sku || `PRD-${String(p._id).slice(-6).toUpperCase()}`,
+        sku: p.productId || p.sku,
         stock: p.stock,
         lowStockThreshold: p.lowStockThreshold,
         image: p.image,

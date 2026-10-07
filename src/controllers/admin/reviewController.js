@@ -14,7 +14,7 @@ const getReviews = async (req, res) => {
     if (rating) filter.rating = Number(rating);
 
     const reviews = await Review.find(filter)
-      .populate('product', 'title sku image')
+      .populate('product', 'title productId sku image')
       .sort({ createdAt: -1 });
 
     res.status(200).json({

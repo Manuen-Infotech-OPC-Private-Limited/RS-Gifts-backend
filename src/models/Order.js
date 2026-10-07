@@ -10,6 +10,10 @@ const orderItemSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  productId: {
+    type: String,
+    default: '',
+  },
   sku: {
     type: String,
     default: '',

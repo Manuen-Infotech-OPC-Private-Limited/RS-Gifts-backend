@@ -161,6 +161,7 @@ const initialProducts = [
   {
     title: 'Personalized Wooden Engraved Photo Frame',
     slug: 'personalized-wooden-engraved-photo-frame',
+    productId: 'PRD-0001',
     sku: 'RS-FRAME-001',
     description: 'High-quality beech wood photo frame customized with your favorite couple or family photo and personal message.',
     category: 'Personalized Gifts',
@@ -184,6 +185,7 @@ const initialProducts = [
   {
     title: 'Customized Ceramic Magic Coffee Mug',
     slug: 'customized-ceramic-magic-coffee-mug',
+    productId: 'PRD-0002',
     sku: 'RS-MUG-002',
     description: 'Heat-activated color changing ceramic coffee mug that reveals your custom picture when hot liquid is poured in.',
     category: 'Personalized Gifts',
@@ -207,6 +209,7 @@ const initialProducts = [
   {
     title: 'Aesthetic Warm Glow Moon Lamp (16 Colors Remote)',
     slug: 'aesthetic-warm-glow-moon-lamp',
+    productId: 'PRD-0003',
     sku: 'RS-LAMP-003',
     description: '3D printed rechargeable Moon night light with touch switch and wireless remote control for ambient home decor.',
     category: 'Home and Decor',
@@ -228,6 +231,7 @@ const initialProducts = [
   {
     title: 'Gourmet Chocolate & Dry Fruit Luxury Hamper',
     slug: 'gourmet-chocolate-dry-fruit-luxury-hamper',
+    productId: 'PRD-0004',
     sku: 'RS-HAMPER-004',
     description: 'Deluxe velvet box packed with artisanal roasted dry fruits, gourmet Belgian chocolates, and a fragrant soy candle.',
     category: 'Flowers and Hampers',
@@ -350,7 +354,9 @@ const seedDatabase = async () => {
     // 7. Seed Sample Products
     await Product.deleteMany({ slug: null });
     for (const prod of initialProducts) {
-      const existing = await Product.findOne({ sku: prod.sku });
+      const existing = await Product.findOne({
+        $or: [{ productId: prod.productId }, { sku: prod.sku }]
+      });
       if (existing) {
         Object.assign(existing, prod);
         await existing.save();

@@ -34,10 +34,14 @@ const updateSettings = async (req, res) => {
 
     const {
       contactPhone,
+      altContactPhone,
       contactEmail,
       supportEmail, // backward compatibility
+      altContactEmail,
       storeAddress,
       supportHours,
+      altSupportHours,
+      googleMapUrl,
       currencySymbol,
       standardShippingFee,
       freeShippingThreshold,
@@ -49,10 +53,14 @@ const updateSettings = async (req, res) => {
     } = req.body;
 
     if (contactPhone !== undefined) settings.contactPhone = contactPhone;
+    if (altContactPhone !== undefined) settings.altContactPhone = altContactPhone;
     if (contactEmail !== undefined) settings.contactEmail = contactEmail;
     else if (supportEmail !== undefined) settings.contactEmail = supportEmail;
+    if (altContactEmail !== undefined) settings.altContactEmail = altContactEmail;
     if (storeAddress !== undefined) settings.storeAddress = storeAddress;
     if (supportHours !== undefined) settings.supportHours = supportHours;
+    if (altSupportHours !== undefined) settings.altSupportHours = altSupportHours;
+    if (googleMapUrl !== undefined) settings.googleMapUrl = googleMapUrl;
     if (currencySymbol !== undefined) settings.currencySymbol = currencySymbol;
     if (standardShippingFee !== undefined) settings.standardShippingFee = Number(standardShippingFee);
     if (freeShippingThreshold !== undefined) settings.freeShippingThreshold = Number(freeShippingThreshold);

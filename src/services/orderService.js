@@ -48,7 +48,8 @@ const calculateOrderPricing = async (items = [], couponCode = null) => {
     verifiedItems.push({
       product: product._id,
       title: product.title,
-      sku: product.sku,
+      productId: product.productId || product.sku || (product._id ? `PRD-${String(product._id).slice(-6).toUpperCase()}` : ''),
+      sku: product.productId || product.sku || '',
       price: effectivePrice,
       quantity: qty,
       image: product.image,

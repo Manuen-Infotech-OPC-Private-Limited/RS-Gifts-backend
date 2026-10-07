@@ -19,6 +19,7 @@ const getProducts = async (req, res) => {
     if (search) {
       filter.$or = [
         { title: { $regex: search, $options: 'i' } },
+        { productId: { $regex: search, $options: 'i' } },
         { sku: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
       ];
@@ -94,6 +95,7 @@ const createProduct = async (req, res) => {
   try {
     const {
       title,
+      productId,
       sku,
       description,
       category,
@@ -116,18 +118,27 @@ const createProduct = async (req, res) => {
       });
     }
 
-    // Auto-generate SKU if not provided
-    const productSku = sku && sku.trim() !== ''
-      ? sku.trim().toUpperCase()
-      : `RS-GIFT-${Date.now().toString().slice(-6)}`;
-
-    // Check SKU collision
-    const existingSku = await Product.findOne({ sku: productSku });
-    if (existingSku) {
-      return res.status(400).json({
-        success: false,
-        message: `A product with SKU "${productSku}" already exists. Please provide a unique SKU.`,
+    // Dynamic Product ID auto-generation or assignment
+    let assignedProductId = (productId || sku || '').trim().toUpperCase();
+    if (!assignedProductId) {
+      const count = await Product.countDocuments();
+      assignedProductId = `PRD-${String(count + 1).padStart(4, '0')}`;
+      const existing = await Product.findOne({
+        $or: [{ productId: assignedProductId }, { sku: assignedProductId }]
       });
+      if (existing) {
+        assignedProductId = `PRD-${Date.now().toString().slice(-6)}`;
+      }
+    } else {
+      const existing = await Product.findOne({
+        $or: [{ productId: assignedProductId }, { sku: assignedProductId }]
+      });
+      if (existing) {
+        return res.status(400).json({
+          success: false,
+          message: `A product with ID "${assignedProductId}" already exists. Please provide a unique ID.`,
+        });
+      }
     }
 
     // Auto-generate slug if not provided
@@ -138,7 +149,8 @@ const createProduct = async (req, res) => {
     const newProduct = await Product.create({
       title: title.trim(),
       slug: productSlug,
-      sku: productSku,
+      productId: assignedProductId,
+      sku: assignedProductId,
       description: description || '',
       category: category || 'Gifts',
       occasions: occasions || [],
@@ -190,19 +202,27 @@ const updateProduct = async (req, res) => {
       });
     }
 
-    // If SKU is changing, verify uniqueness
-    if (req.body.sku && req.body.sku.toUpperCase() !== product.sku) {
-      const existing = await Product.findOne({ sku: req.body.sku.toUpperCase() });
+    // If productId or SKU is changing, verify uniqueness
+    const incomingId = (req.body.productId || req.body.sku || '').trim().toUpperCase();
+    if (incomingId && incomingId !== product.productId && incomingId !== product.sku) {
+      const existing = await Product.findOne({
+        _id: { $ne: product._id },
+        $or: [{ productId: incomingId }, { sku: incomingId }]
+      });
       if (existing) {
         return res.status(400).json({
           success: false,
-          message: `SKU "${req.body.sku}" is already in use by another product`,
+          message: `Product ID "${incomingId}" is already in use by another product`,
         });
       }
     }
 
     // Prepare update object
     const updateData = { ...req.body };
+    if (incomingId) {
+      updateData.productId = incomingId;
+      updateData.sku = incomingId;
+    }
     if (updateData.price) updateData.price = Number(updateData.price);
     if (updateData.salePrice !== undefined) {
       updateData.salePrice = updateData.salePrice !== '' ? Number(updateData.salePrice) : updateData.price;
@@ -211,7 +231,6 @@ const updateProduct = async (req, res) => {
     if (updateData.lowStockThreshold !== undefined) {
       updateData.lowStockThreshold = Number(updateData.lowStockThreshold);
     }
-    if (updateData.sku) updateData.sku = updateData.sku.toUpperCase();
 
     // Auto-generate updated slug if title changes and no new slug is provided
     if (updateData.title && !updateData.slug && updateData.title.trim() !== product.title) {

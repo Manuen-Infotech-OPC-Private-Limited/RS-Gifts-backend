@@ -6,7 +6,17 @@ const settingSchema = new mongoose.Schema({
     default: '',
     trim: true,
   },
+  altContactPhone: {
+    type: String,
+    default: '',
+    trim: true,
+  },
   contactEmail: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+  altContactEmail: {
     type: String,
     default: '',
     trim: true,
@@ -17,6 +27,16 @@ const settingSchema = new mongoose.Schema({
     trim: true,
   },
   supportHours: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+  altSupportHours: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+  googleMapUrl: {
     type: String,
     default: '',
     trim: true,

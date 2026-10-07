@@ -74,9 +74,13 @@ const getPublicSettings = async (req, res) => {
       success: true,
       settings: {
         contactPhone: settings.contactPhone || '',
+        altContactPhone: settings.altContactPhone || '',
         contactEmail: settings.contactEmail || settings.supportEmail || '',
+        altContactEmail: settings.altContactEmail || '',
         storeAddress: settings.storeAddress || '',
         supportHours: settings.supportHours || '',
+        altSupportHours: settings.altSupportHours || '',
+        googleMapUrl: settings.googleMapUrl || '',
         currencySymbol: settings.currencySymbol,
         standardShippingFee: settings.standardShippingFee,
         freeShippingThreshold: settings.freeShippingThreshold,
