@@ -1,14 +1,54 @@
 import mongoose from 'mongoose';
+import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import Coupon from '../models/Coupon.js';
 import Setting from '../models/Setting.js';
 import { validateCouponForAmount } from '../controllers/customer/customerCouponController.js';
 
-// Generate human-friendly unique order number
-const generateOrderNumber = () => {
-  const timestamp = Date.now().toString().slice(-6);
-  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-  return `RS-ORD-${timestamp}-${randomSuffix}`;
+// Generate human-friendly unique 10-character alphanumeric order number
+// Format: strictly 10 characters (combination of uppercase letters and numbers), e.g. "RS8K29MA4X"
+const generateOrderNumber = async () => {
+  const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const digits = '23456789';
+  const allChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+  for (let attempt = 0; attempt < 10; attempt++) {
+    let chars = '';
+    // Guarantee mix of numbers and letters in the 8 random characters
+    for (let i = 0; i < 3; i++) {
+      chars += digits[Math.floor(Math.random() * digits.length)];
+    }
+    for (let i = 0; i < 2; i++) {
+      chars += letters[Math.floor(Math.random() * letters.length)];
+    }
+    for (let i = 0; i < 3; i++) {
+      chars += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+
+    // Shuffle the 8 characters
+    const shuffled = chars
+      .split('')
+      .sort(() => 0.5 - Math.random())
+      .join('');
+    const candidate = `RS${shuffled}`; // Strictly 2 + 8 = 10 characters
+
+    try {
+      const existing = await Order.findOne({ orderNumber: candidate });
+      if (!existing) {
+        return candidate;
+      }
+    } catch {
+      return candidate;
+    }
+  }
+
+  // Fallback strictly 10 characters if loop exhausts
+  const randNum = Math.floor(1000 + Math.random() * 9000).toString();
+  let randL = '';
+  for (let i = 0; i < 4; i++) {
+    randL += letters[Math.floor(Math.random() * letters.length)];
+  }
+  return `RS${randNum}${randL}`.slice(0, 10);
 };
 
 // Validate cart items and calculate totals using real database prices

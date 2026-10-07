@@ -44,7 +44,7 @@ const createCustomerOrder = async (req, res) => {
     // Calculate real database pricing and verify stock
     const pricing = await calculateOrderPricing(items, couponCode);
 
-    const orderNumber = generateOrderNumber();
+    const orderNumber = await generateOrderNumber();
 
     const order = await Order.create({
       orderNumber,

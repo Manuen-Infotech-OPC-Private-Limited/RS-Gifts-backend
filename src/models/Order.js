@@ -44,6 +44,9 @@ const orderSchema = new mongoose.Schema({
     type: String,
     unique: true,
     required: true,
+    maxlength: 10,
+    trim: true,
+    uppercase: true,
   },
   customer: {
     type: mongoose.Schema.Types.ObjectId,
