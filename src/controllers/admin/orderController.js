@@ -168,9 +168,95 @@ const updatePaymentStatus = async (req, res) => {
   }
 };
 
+// @desc    Update courier tracking information
+// @route   PATCH /api/admin/orders/:id/tracking
+// @access  Private (Admin)
+const updateOrderTracking = async (req, res) => {
+  try {
+    const { carrier, trackingNumber, trackingUrl } = req.body;
+    let order = null;
+
+    if (req.params.id && req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      order = await Order.findById(req.params.id);
+    }
+    if (!order) {
+      order = await Order.findOne({ orderNumber: req.params.id.toUpperCase() });
+    }
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found',
+      });
+    }
+
+    order.tracking = {
+      carrier: carrier !== undefined ? carrier : (order.tracking?.carrier || ''),
+      trackingNumber: trackingNumber !== undefined ? trackingNumber : (order.tracking?.trackingNumber || ''),
+      trackingUrl: trackingUrl !== undefined ? trackingUrl : (order.tracking?.trackingUrl || ''),
+    };
+
+    if (trackingNumber && (order.orderStatus === 'Pending' || order.orderStatus === 'Processing')) {
+      order.orderStatus = 'Shipped';
+      order.statusHistory.push({
+        status: 'Shipped',
+        timestamp: new Date(),
+        note: `Dispatched via ${carrier || 'Express Courier'} (${trackingNumber})`,
+      });
+    }
+
+    const updated = await order.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Order #${order.orderNumber} courier tracking updated`,
+      order: updated,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Delete an order
+// @route   DELETE /api/admin/orders/:id
+// @access  Private (Admin)
+const deleteOrder = async (req, res) => {
+  try {
+    let order = null;
+    if (req.params.id && req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      order = await Order.findByIdAndDelete(req.params.id);
+    }
+    if (!order) {
+      order = await Order.findOneAndDelete({ orderNumber: req.params.id.toUpperCase() });
+    }
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Order deleted successfully',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 export {
   getOrders,
   getOrderById,
   updateOrderStatus,
   updatePaymentStatus,
+  updateOrderTracking,
+  deleteOrder,
 };

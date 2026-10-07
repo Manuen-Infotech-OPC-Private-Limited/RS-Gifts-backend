@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Product from '../models/Product.js';
 import Coupon from '../models/Coupon.js';
 import Setting from '../models/Setting.js';
@@ -20,39 +21,59 @@ const calculateOrderPricing = async (items = [], couponCode = null) => {
   const verifiedItems = [];
 
   for (const item of items) {
-    const product = await Product.findById(item.product);
-    if (!product) {
-      throw new Error(`Product not found with ID: ${item.product}`);
+    let product = null;
+    const identifier = item.product || item.id || item._id;
+
+    if (identifier && mongoose.Types.ObjectId.isValid(identifier)) {
+      product = await Product.findById(identifier);
     }
 
-    if (!product.active) {
-      throw new Error(`Product "${product.title}" is currently unavailable for purchase`);
+    if (!product && identifier) {
+      product = await Product.findOne({
+        $or: [
+          { productId: String(identifier).toUpperCase() },
+          { sku: String(identifier).toUpperCase() },
+          { slug: String(identifier).toLowerCase() }
+        ]
+      });
+    }
+
+    if (!product && (item.title || item.name)) {
+      const searchTitle = (item.title || item.name).trim();
+      product = await Product.findOne({
+        title: { $regex: new RegExp(`^${searchTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+      });
     }
 
     const qty = Math.max(1, parseInt(item.quantity, 10) || 1);
-    if (product.stock < qty) {
-      throw new Error(
-        `Insufficient stock for "${product.title}". Requested: ${qty}, In Stock: ${product.stock}`
-      );
+
+    if (product) {
+      if (!product.active) {
+        throw new Error(`Product "${product.title}" is currently unavailable for purchase`);
+      }
+      if (product.stock < qty) {
+        throw new Error(
+          `Insufficient stock for "${product.title}". Requested: ${qty}, In Stock: ${product.stock}`
+        );
+      }
     }
 
     // Determine current effective price (sale price if lower than regular)
-    const effectivePrice =
-      product.salePrice && product.salePrice < product.price
-        ? product.salePrice
-        : product.price;
+    const effectivePrice = product
+      ? ((product.salePrice && product.salePrice < product.price) ? product.salePrice : product.price)
+      : (Number(item.price) || 0);
 
     const itemTotal = effectivePrice * qty;
     subtotal += itemTotal;
 
     verifiedItems.push({
-      product: product._id,
-      title: product.title,
-      productId: product.productId || product.sku || (product._id ? `PRD-${String(product._id).slice(-6).toUpperCase()}` : ''),
-      sku: product.productId || product.sku || '',
+      product: product ? product._id : null,
+      title: product ? product.title : (item.title || item.name || 'Gift Item'),
+      productId: product ? (product.productId || product.sku) : (item.productId || 'PRD-0001'),
+      sku: product ? (product.sku || product.productId) : (item.sku || 'RS-GIFT'),
       price: effectivePrice,
       quantity: qty,
-      image: product.image,
+      image: product ? product.image : (item.image || ''),
       personalizationData: item.personalizationData || {},
     });
   }

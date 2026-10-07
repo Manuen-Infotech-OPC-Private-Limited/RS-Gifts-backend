@@ -4,7 +4,7 @@ const orderItemSchema = new mongoose.Schema({
   product: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product',
-    required: true,
+    required: false,
   },
   title: {
     type: String,
@@ -100,6 +100,11 @@ const orderSchema = new mongoose.Schema({
     type: String,
     enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
     default: 'Pending',
+  },
+  tracking: {
+    carrier: { type: String, default: '' },
+    trackingNumber: { type: String, default: '' },
+    trackingUrl: { type: String, default: '' },
   },
   paymentDetails: {
     razorpayOrderId: { type: String, default: '' },

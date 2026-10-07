@@ -15,6 +15,7 @@ import adminCouponRoutes from './admin/couponRoutes.js';
 import adminBannerRoutes from './admin/bannerRoutes.js';
 import adminReviewRoutes from './admin/reviewRoutes.js';
 import adminSettingRoutes from './admin/settingRoutes.js';
+import adminInquiryRoutes from './admin/inquiryRoutes.js';
 
 // Customer Routes
 import customerAuthRoutes from './customer/customerAuthRoutes.js';
@@ -23,6 +24,7 @@ import customerOrderRoutes from './customer/customerOrderRoutes.js';
 import customerCouponRoutes from './customer/customerCouponRoutes.js';
 import customerReviewRoutes from './customer/customerReviewRoutes.js';
 import customerContentRoutes from './customer/customerContentRoutes.js';
+import customerInquiryRoutes from './customer/customerInquiryRoutes.js';
 
 // Upload Routes
 import uploadRoutes from './uploadRoutes.js';
@@ -51,6 +53,7 @@ router.use('/admin/coupons', adminCouponRoutes);
 router.use('/admin/content/banners', adminBannerRoutes);
 router.use('/admin/reviews', adminReviewRoutes);
 router.use('/admin/settings', adminSettingRoutes);
+router.use('/admin/inquiries', adminInquiryRoutes);
 
 // Customer Route Mounts
 router.use('/customer/auth', customerAuthRoutes);
@@ -59,6 +62,7 @@ router.use('/customer/orders', customerOrderRoutes);
 router.use('/customer/coupons', customerCouponRoutes);
 router.use('/customer/reviews', customerReviewRoutes);
 router.use('/customer/content', customerContentRoutes);
+router.use('/customer/inquiries', customerInquiryRoutes);
 router.use('/customer', customerContentRoutes);
 
 // Direct Uploads Route
@@ -66,9 +70,12 @@ router.use('/upload', uploadRoutes);
 
 // Direct compatibility aliases (for frontends calling /api/products, /api/orders, /api/banners, etc.)
 router.use('/products', customerProductRoutes);
+router.use('/orders', customerOrderRoutes);
 router.use('/categories', customerContentRoutes);
 router.use('/occasions', customerContentRoutes);
 router.use('/banners', customerContentRoutes);
 router.use('/coupons', customerCouponRoutes);
+router.use('/inquiries', customerInquiryRoutes);
+router.use('/contact', customerInquiryRoutes);
 
 export default router;
