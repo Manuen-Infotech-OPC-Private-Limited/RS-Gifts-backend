@@ -1,4 +1,4 @@
-import { getActiveCategories, getActiveOccasions } from '../controllers/customer/customerContentController.js';
+import { getActiveCategories, getActiveOccasions, getActiveBanners, getPublicSettings } from '../controllers/customer/customerContentController.js';
 import mongoose from 'mongoose';
 import express from 'express';
 const router = express.Router();
@@ -71,6 +71,10 @@ router.use('/upload', uploadRoutes);
 // Direct compatibility aliases (for frontends calling /api/products, /api/orders, /api/banners, etc.)
 router.use('/products', customerProductRoutes);
 router.use('/orders', customerOrderRoutes);
+router.get('/categories', getActiveCategories);
+router.get('/occasions', getActiveOccasions);
+router.get('/banners', getActiveBanners);
+router.get('/settings', getPublicSettings);
 router.use('/categories', customerContentRoutes);
 router.use('/occasions', customerContentRoutes);
 router.use('/banners', customerContentRoutes);

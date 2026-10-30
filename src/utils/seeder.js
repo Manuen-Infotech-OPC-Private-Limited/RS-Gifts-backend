@@ -28,13 +28,6 @@ const initialCategories = [
     image: '',
   },
   {
-    name: 'Home and Decor',
-    slug: 'home-and-decor',
-    description: 'Aesthetic lighting, decorative art, clocks, and home styling',
-    active: true,
-    image: '',
-  },
-  {
     name: 'Toys and Kids',
     slug: 'toys-and-kids',
     description: 'Creative toys, board games, learning gifts, and fun surprises for kids',
@@ -212,7 +205,7 @@ const initialProducts = [
     productId: 'PRD-0003',
     sku: 'RS-LAMP-003',
     description: '3D printed rechargeable Moon night light with touch switch and wireless remote control for ambient home decor.',
-    category: 'Home and Decor',
+    category: 'Gifts',
     occasions: ['Birthday', 'Anniversary', 'Housewarming'],
     price: 1299,
     salePrice: 999,

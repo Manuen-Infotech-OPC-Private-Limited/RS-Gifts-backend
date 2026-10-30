@@ -1,4 +1,37 @@
+import mongoose from 'mongoose';
 import Category from '../../models/Category.js';
+
+// Helper to find category by ObjectId, slug, or name
+const findCategory = async (idOrSlug, fallbackName = null) => {
+  if (!idOrSlug) return null;
+  if (mongoose.Types.ObjectId.isValid(idOrSlug)) {
+    const byId = await Category.findById(idOrSlug);
+    if (byId) return byId;
+  }
+  const clean = String(idOrSlug).trim().toLowerCase();
+  const slugified = clean.replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+  let cat = await Category.findOne({
+    $or: [
+      { slug: clean },
+      { slug: slugified },
+      { name: new RegExp(`^${clean}$`, 'i') },
+      { name: new RegExp(`^${String(idOrSlug).trim()}$`, 'i') }
+    ]
+  });
+
+  if (!cat && fallbackName) {
+    const nameClean = String(fallbackName).trim();
+    const nameSlug = nameClean.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    cat = await Category.findOne({
+      $or: [
+        { slug: nameSlug },
+        { name: new RegExp(`^${nameClean}$`, 'i') }
+      ]
+    });
+  }
+  return cat;
+};
 
 // @desc    Get all categories
 // @route   GET /api/admin/categories
@@ -24,7 +57,7 @@ const getCategories = async (req, res) => {
 // @access  Private (Admin)
 const createCategory = async (req, res) => {
   try {
-    const { name, description, image, active } = req.body;
+    const { name, description, image, active, slug: customSlug } = req.body;
 
     if (!name || name.trim() === '') {
       return res.status(400).json({
@@ -33,17 +66,24 @@ const createCategory = async (req, res) => {
       });
     }
 
-    const slug = name
+    const slug = (customSlug || name)
       .toLowerCase()
       .trim()
       .replace(/[^\w ]+/g, '')
       .replace(/ +/g, '-');
 
-    const existing = await Category.findOne({ slug });
+    const existing = await findCategory(slug, name);
     if (existing) {
-      return res.status(400).json({
-        success: false,
-        message: `Category with name "${name}" already exists`,
+      existing.name = name.trim();
+      if (description !== undefined) existing.description = description;
+      if (image !== undefined) existing.image = image;
+      if (active !== undefined) existing.active = Boolean(active);
+      await existing.save();
+
+      return res.status(200).json({
+        success: true,
+        message: `Category "${existing.name}" updated successfully`,
+        category: existing,
       });
     }
 
@@ -73,19 +113,43 @@ const createCategory = async (req, res) => {
 // @access  Private (Admin)
 const updateCategory = async (req, res) => {
   try {
-    const category = await Category.findById(req.params.id);
+    const { id } = req.params;
+    const { name, description, image, active, slug: customSlug } = req.body;
+
+    let category = await findCategory(id, name);
+
     if (!category) {
+      if (name && name.trim()) {
+        const slug = (customSlug || name)
+          .toLowerCase()
+          .trim()
+          .replace(/[^\w ]+/g, '')
+          .replace(/ +/g, '-');
+
+        category = await Category.create({
+          name: name.trim(),
+          slug,
+          description: description || '',
+          image: image || '',
+          active: active !== undefined ? Boolean(active) : true,
+        });
+
+        return res.status(200).json({
+          success: true,
+          message: `Category "${category.name}" created successfully`,
+          category,
+        });
+      }
+
       return res.status(404).json({
         success: false,
         message: 'Category not found',
       });
     }
 
-    const { name, description, image, active } = req.body;
-
     if (name && name.trim() !== category.name) {
       category.name = name.trim();
-      category.slug = name
+      category.slug = (customSlug || name)
         .toLowerCase()
         .trim()
         .replace(/[^\w ]+/g, '')
@@ -116,7 +180,8 @@ const updateCategory = async (req, res) => {
 // @access  Private (Admin)
 const deleteCategory = async (req, res) => {
   try {
-    const category = await Category.findById(req.params.id);
+    const { id } = req.params;
+    const category = await findCategory(id);
     if (!category) {
       return res.status(404).json({
         success: false,
@@ -124,12 +189,12 @@ const deleteCategory = async (req, res) => {
       });
     }
 
-    await Category.findByIdAndDelete(req.params.id);
+    await Category.findByIdAndDelete(category._id);
 
     res.status(200).json({
       success: true,
       message: `Category "${category.name}" deleted successfully`,
-      deletedId: req.params.id,
+      deletedId: category._id,
     });
   } catch (error) {
     res.status(500).json({
@@ -144,7 +209,8 @@ const deleteCategory = async (req, res) => {
 // @access  Private (Admin)
 const toggleCategoryActive = async (req, res) => {
   try {
-    const category = await Category.findById(req.params.id);
+    const { id } = req.params;
+    const category = await findCategory(id);
     if (!category) {
       return res.status(404).json({
         success: false,
