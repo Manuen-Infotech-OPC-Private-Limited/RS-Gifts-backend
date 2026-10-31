@@ -1,42 +1,43 @@
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+import { fileURLToPath } from 'url';
 import app from './app.js';
 import connectDB from './config/db.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load environment variables
+dotenv.config();
+if (!process.env.MONGO_URI) {
+  dotenv.config({ path: path.join(__dirname, '../.env') });
+}
+
 const PORT = process.env.PORT || 5000;
 
-// Initialize Database & Start Server
+// Connect to Database and start server
 const startServer = async () => {
-  // Connect to MongoDB
-  await connectDB();
+  try {
+    await connectDB();
 
-  const server = app.listen(PORT, () => {
-    console.log(`server is running on prot http://localhost:${PORT}`)
-  });
-
-  // Handle Unhandled Promise Rejections
-  process.on('unhandledRejection', (err) => {
-    console.error(`Unhandled Rejection: ${err.message}`);
-    // Keep server running in dev or exit gracefully
-  });
-
-  // Handle Uncaught Exceptions
-  process.on('uncaughtException', (err) => {
-    console.error(`Uncaught Exception: ${err.message}`);
-    process.exit(1);
-  });
-
-  // Graceful Shutdown
-  const shutdown = () => {
-    console.log('Stopping server gracefully...');
-    server.close(() => {
-      console.log('HTTP server closed.');
-      process.exit(0);
+    const server = app.listen(PORT, () => {
+      console.log(`Server is running on http://localhost:${PORT}`);
     });
-  };
 
-  process.on('SIGTERM', shutdown);
-  process.on('SIGINT', shutdown);
+    // Graceful shutdown
+    const shutdown = () => {
+      server.close(() => {
+        process.exit(0);
+      });
+    };
+
+    process.on('SIGTERM', shutdown);
+    process.on('SIGINT', shutdown);
+
+  } catch (error) {
+    console.error(`Server startup error: ${error.message}`);
+    process.exit(1);
+  }
 };
 
 startServer();

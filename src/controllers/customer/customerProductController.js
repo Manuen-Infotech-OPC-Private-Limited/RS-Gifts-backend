@@ -110,9 +110,11 @@ const getCustomerProducts = async (req, res) => {
 
     const formattedProducts = products.map((prod) => {
       const p = prod.toObject ? prod.toObject() : { ...prod };
-      if (activeDiscount) {
-        p.discount = activeDiscount.label;
-        p.activeCoupon = activeDiscount;
+      if (p.price && p.salePrice && p.price > p.salePrice) {
+        const pct = Math.round(((p.price - p.salePrice) / p.price) * 100);
+        p.discount = `${pct}% OFF`;
+      } else {
+        p.discount = '';
       }
       return p;
     });
@@ -148,9 +150,11 @@ const getFeaturedProducts = async (req, res) => {
 
     const formattedProducts = products.map((prod) => {
       const p = prod.toObject ? prod.toObject() : { ...prod };
-      if (activeDiscount) {
-        p.discount = activeDiscount.label;
-        p.activeCoupon = activeDiscount;
+      if (p.price && p.salePrice && p.price > p.salePrice) {
+        const pct = Math.round(((p.price - p.salePrice) / p.price) * 100);
+        p.discount = `${pct}% OFF`;
+      } else {
+        p.discount = '';
       }
       return p;
     });

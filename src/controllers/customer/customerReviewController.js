@@ -70,7 +70,7 @@ const createCustomerReview = async (req, res) => {
       customerEmail: email,
       rating: Number(rating),
       comment: comment.trim(),
-      isApproved: false, // Must be approved by admin before showing
+      isApproved: true, // Visible by default on customer store
     });
 
     // Update product rating stats in controller

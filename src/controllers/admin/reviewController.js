@@ -43,7 +43,11 @@ const toggleApproveReview = async (req, res) => {
       });
     }
 
-    review.isApproved = !review.isApproved;
+    if (req.body && typeof req.body.isApproved === 'boolean') {
+      review.isApproved = req.body.isApproved;
+    } else {
+      review.isApproved = !review.isApproved;
+    }
     await review.save();
 
     // Recalculate average rating for the product

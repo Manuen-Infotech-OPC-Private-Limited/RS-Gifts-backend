@@ -86,6 +86,13 @@ const loginCustomer = async (req, res) => {
       });
     }
 
+    if (customer.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Administrator accounts cannot log in through the customer storefront. Please log in directly at http://localhost:3000/login',
+      });
+    }
+
     if (!customer.isActive) {
       return res.status(403).json({
         success: false,
