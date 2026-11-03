@@ -16,13 +16,18 @@ const updateProductAverageRating = async (productId) => {
     ]);
 
     if (stats.length > 0) {
+      const avg = Math.round(stats[0].avgRating * 10) / 10;
       await Product.findByIdAndUpdate(productId, {
-        'ratings.average': Math.round(stats[0].avgRating * 10) / 10,
+        rating: avg,
+        'ratings.average': avg,
         'ratings.count': stats[0].count,
       });
     } else {
+      const currentProd = await Product.findById(productId);
+      const fallback = currentProd?.rating !== undefined ? currentProd.rating : 5;
       await Product.findByIdAndUpdate(productId, {
-        'ratings.average': 0,
+        rating: fallback,
+        'ratings.average': fallback,
         'ratings.count': 0,
       });
     }

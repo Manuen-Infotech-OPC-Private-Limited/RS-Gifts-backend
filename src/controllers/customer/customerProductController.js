@@ -110,6 +110,8 @@ const getCustomerProducts = async (req, res) => {
 
     const formattedProducts = products.map((prod) => {
       const p = prod.toObject ? prod.toObject() : { ...prod };
+      p.rating = Number(p.rating !== undefined ? p.rating : (p.ratings?.average !== undefined ? p.ratings.average : 5));
+      p.reviews = Number(p.ratings?.count !== undefined ? p.ratings.count : (p.reviews !== undefined ? p.reviews : 0));
       if (p.price && p.salePrice && p.price > p.salePrice) {
         const pct = Math.round(((p.price - p.salePrice) / p.price) * 100);
         p.discount = `${pct}% OFF`;
@@ -150,6 +152,8 @@ const getFeaturedProducts = async (req, res) => {
 
     const formattedProducts = products.map((prod) => {
       const p = prod.toObject ? prod.toObject() : { ...prod };
+      p.rating = Number(p.rating !== undefined ? p.rating : (p.ratings?.average !== undefined ? p.ratings.average : 5));
+      p.reviews = Number(p.ratings?.count !== undefined ? p.ratings.count : (p.reviews !== undefined ? p.reviews : 0));
       if (p.price && p.salePrice && p.price > p.salePrice) {
         const pct = Math.round(((p.price - p.salePrice) / p.price) * 100);
         p.discount = `${pct}% OFF`;

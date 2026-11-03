@@ -90,8 +90,14 @@ const productSchema = new mongoose.Schema({
     allowGiftWrap: { type: Boolean, default: false },
     allowGreetingCard: { type: Boolean, default: false }
   },
+  rating: {
+    type: Number,
+    default: 5,
+    min: 0,
+    max: 5,
+  },
   ratings: {
-    average: { type: Number, default: 0, min: 0, max: 5 },
+    average: { type: Number, default: 5, min: 0, max: 5 },
     count: { type: Number, default: 0, min: 0 }
   },
   experienceTitle: {

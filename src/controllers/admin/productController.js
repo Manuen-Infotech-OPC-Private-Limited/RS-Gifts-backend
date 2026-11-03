@@ -165,6 +165,11 @@ const createProduct = async (req, res) => {
       gallery: gallery || [],
       active: active !== undefined ? Boolean(active) : true,
       featured: featured !== undefined ? Boolean(featured) : false,
+      rating: req.body.rating !== undefined ? Number(req.body.rating) : 5,
+      ratings: {
+        average: req.body.rating !== undefined ? Number(req.body.rating) : 5,
+        count: req.body.reviews !== undefined ? Number(req.body.reviews) : 0,
+      },
       personalization: personalization || {
         allowCustomText: false,
         customTextLabel: '',
@@ -239,6 +244,11 @@ const updateProduct = async (req, res) => {
     if (updateData.stock !== undefined) updateData.stock = Number(updateData.stock);
     if (updateData.lowStockThreshold !== undefined) {
       updateData.lowStockThreshold = Number(updateData.lowStockThreshold);
+    }
+    if (updateData.rating !== undefined) {
+      const parsedR = Number(updateData.rating);
+      updateData.rating = parsedR;
+      updateData['ratings.average'] = parsedR;
     }
 
     // Auto-generate updated slug if title changes and no new slug is provided
