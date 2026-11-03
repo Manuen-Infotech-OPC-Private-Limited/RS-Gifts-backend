@@ -235,6 +235,12 @@ const updateProduct = async (req, res) => {
 
     // Prepare update object
     const updateData = { ...req.body };
+    delete updateData._id;
+    delete updateData.id;
+    delete updateData.createdAt;
+    delete updateData.updatedAt;
+    delete updateData.__v;
+
     updateData.productId = incomingId;
     updateData.sku = incomingId;
     if (updateData.price) updateData.price = Number(updateData.price);
@@ -248,7 +254,17 @@ const updateProduct = async (req, res) => {
     if (updateData.rating !== undefined) {
       const parsedR = Number(updateData.rating);
       updateData.rating = parsedR;
-      updateData['ratings.average'] = parsedR;
+      if (updateData.ratings && typeof updateData.ratings === 'object') {
+        updateData.ratings = {
+          ...updateData.ratings,
+          average: parsedR
+        };
+      } else {
+        updateData.ratings = {
+          average: parsedR,
+          count: product.ratings?.count || 0
+        };
+      }
     }
 
     // Auto-generate updated slug if title changes and no new slug is provided
