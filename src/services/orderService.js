@@ -5,32 +5,26 @@ import Coupon from '../models/Coupon.js';
 import Setting from '../models/Setting.js';
 import { validateCouponForAmount } from '../controllers/customer/customerCouponController.js';
 
-// Generate human-friendly unique 10-character alphanumeric order number
-// Format: strictly 10 characters (combination of uppercase letters and numbers), e.g. "RS8K29MA4X"
+// Generate human-friendly unique 6-character alphanumeric order number
+// Format: strictly 6 characters (combination of uppercase alphabets and numbers), e.g. "RS4K92"
 const generateOrderNumber = async () => {
   const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
   const digits = '23456789';
   const allChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
-  for (let attempt = 0; attempt < 10; attempt++) {
-    let chars = '';
-    // Guarantee mix of numbers and letters in the 8 random characters
-    for (let i = 0; i < 3; i++) {
-      chars += digits[Math.floor(Math.random() * digits.length)];
-    }
-    for (let i = 0; i < 2; i++) {
-      chars += letters[Math.floor(Math.random() * letters.length)];
-    }
-    for (let i = 0; i < 3; i++) {
-      chars += allChars[Math.floor(Math.random() * allChars.length)];
-    }
+  for (let attempt = 0; attempt < 15; attempt++) {
+    // Prefix RS (2 letters) + 4 mixed alphanumeric chars (guaranteed digits and letters)
+    let trailing = '';
+    trailing += digits[Math.floor(Math.random() * digits.length)];
+    trailing += digits[Math.floor(Math.random() * digits.length)];
+    trailing += letters[Math.floor(Math.random() * letters.length)];
+    trailing += allChars[Math.floor(Math.random() * allChars.length)];
 
-    // Shuffle the 8 characters
-    const shuffled = chars
+    const shuffled = trailing
       .split('')
       .sort(() => 0.5 - Math.random())
       .join('');
-    const candidate = `RS${shuffled}`; // Strictly 2 + 8 = 10 characters
+    const candidate = `RS${shuffled}`; // Strictly 2 + 4 = 6 characters
 
     try {
       const existing = await Order.findOne({ orderNumber: candidate });
@@ -42,13 +36,11 @@ const generateOrderNumber = async () => {
     }
   }
 
-  // Fallback strictly 10 characters if loop exhausts
-  const randNum = Math.floor(1000 + Math.random() * 9000).toString();
-  let randL = '';
-  for (let i = 0; i < 4; i++) {
-    randL += letters[Math.floor(Math.random() * letters.length)];
-  }
-  return `RS${randNum}${randL}`.slice(0, 10);
+  // Fallback strictly 6 characters if loop exhausts
+  const randNum = Math.floor(10 + Math.random() * 90).toString();
+  const randL1 = letters[Math.floor(Math.random() * letters.length)];
+  const randL2 = letters[Math.floor(Math.random() * letters.length)];
+  return `RS${randNum}${randL1}${randL2}`.slice(0, 6);
 };
 
 // Validate cart items and calculate totals using real database prices

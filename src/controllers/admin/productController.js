@@ -118,27 +118,26 @@ const createProduct = async (req, res) => {
       });
     }
 
-    // Dynamic Product ID auto-generation or assignment
-    let assignedProductId = (productId || sku || '').trim().toUpperCase();
-    if (!assignedProductId) {
-      const count = await Product.countDocuments();
-      assignedProductId = `PRD-${String(count + 1).padStart(4, '0')}`;
-      const existing = await Product.findOne({
-        $or: [{ productId: assignedProductId }, { sku: assignedProductId }]
-      });
-      if (existing) {
-        assignedProductId = `PRD-${Date.now().toString().slice(-6)}`;
+    // Auto-generate or assign a guaranteed unique 6-digit Product ID (100001 - 999999)
+    let assignedProductId = (productId || sku || '').trim().replace(/\D/g, '');
+    if (assignedProductId.length > 6) {
+      assignedProductId = assignedProductId.slice(-6);
+    }
+
+    const allExisting = await Product.find({}, 'productId sku').lean();
+    const usedIds = new Set(
+      allExisting
+        .flatMap(p => [p.productId, p.sku])
+        .filter(id => id && /^\d{6}$/.test(String(id).trim()))
+        .map(id => String(id).trim())
+    );
+
+    if (assignedProductId.length !== 6 || usedIds.has(assignedProductId)) {
+      let nextNum = 100001;
+      while (usedIds.has(String(nextNum))) {
+        nextNum++;
       }
-    } else {
-      const existing = await Product.findOne({
-        $or: [{ productId: assignedProductId }, { sku: assignedProductId }]
-      });
-      if (existing) {
-        return res.status(400).json({
-          success: false,
-          message: `A product with ID "${assignedProductId}" already exists. Please provide a unique ID.`,
-        });
-      }
+      assignedProductId = String(nextNum);
     }
 
     // Auto-generate slug if not provided
@@ -202,27 +201,32 @@ const updateProduct = async (req, res) => {
       });
     }
 
-    // If productId or SKU is changing, verify uniqueness
-    const incomingId = (req.body.productId || req.body.sku || '').trim().toUpperCase();
-    if (incomingId && incomingId !== product.productId && incomingId !== product.sku) {
-      const existing = await Product.findOne({
-        _id: { $ne: product._id },
-        $or: [{ productId: incomingId }, { sku: incomingId }]
-      });
-      if (existing) {
-        return res.status(400).json({
-          success: false,
-          message: `Product ID "${incomingId}" is already in use by another product`,
-        });
+    // Auto-assign next unique 6-digit ID if collision or empty
+    let incomingId = (req.body.productId || req.body.sku || product.productId || product.sku || '').trim().replace(/\D/g, '');
+    if (incomingId.length > 6) {
+      incomingId = incomingId.slice(-6);
+    }
+
+    const otherExisting = await Product.find({ _id: { $ne: product._id } }, 'productId sku').lean();
+    const usedIds = new Set(
+      otherExisting
+        .flatMap(p => [p.productId, p.sku])
+        .filter(id => id && /^\d{6}$/.test(String(id).trim()))
+        .map(id => String(id).trim())
+    );
+
+    if (incomingId.length !== 6 || usedIds.has(incomingId)) {
+      let nextNum = 100001;
+      while (usedIds.has(String(nextNum))) {
+        nextNum++;
       }
+      incomingId = String(nextNum);
     }
 
     // Prepare update object
     const updateData = { ...req.body };
-    if (incomingId) {
-      updateData.productId = incomingId;
-      updateData.sku = incomingId;
-    }
+    updateData.productId = incomingId;
+    updateData.sku = incomingId;
     if (updateData.price) updateData.price = Number(updateData.price);
     if (updateData.salePrice !== undefined) {
       updateData.salePrice = updateData.salePrice !== '' ? Number(updateData.salePrice) : updateData.price;
@@ -249,6 +253,24 @@ const updateProduct = async (req, res) => {
       product: updated,
     });
   } catch (error) {
+    if (error.code === 11000 || (error.message && error.message.includes('E11000'))) {
+      try {
+        const others = await Product.find({ _id: { $ne: req.params.id } }, 'productId sku').lean();
+        const used = new Set(others.flatMap(p => [p.productId, p.sku]).filter(Boolean));
+        let nextN = 100001;
+        while (used.has(String(nextN))) nextN++;
+        const fixed = await Product.findByIdAndUpdate(
+          req.params.id,
+          { $set: { ...req.body, productId: String(nextN), sku: String(nextN) } },
+          { new: true, runValidators: true }
+        );
+        return res.status(200).json({
+          success: true,
+          message: `Product updated successfully with unique ID ${nextN}`,
+          product: fixed,
+        });
+      } catch (retryErr) { }
+    }
     res.status(500).json({
       success: false,
       message: error.message,

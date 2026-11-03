@@ -101,29 +101,64 @@ const productSchema = new mongoose.Schema({
 });
 
 productSchema.pre('validate', async function () {
-  if (!this.productId) {
-    if (this.sku && this.sku.trim()) {
-      this.productId = this.sku.trim().toUpperCase();
-    } else {
-      try {
-        const count = await mongoose.model('Product').countDocuments();
-        this.productId = `PRD-${String(count + 1).padStart(4, '0')}`;
-      } catch {
-        this.productId = `PRD-${Date.now().toString().slice(-6)}`;
-      }
+  let digits = String(this.productId || this.sku || '').replace(/\D/g, '');
+  if (digits.length > 6) {
+    digits = digits.slice(-6);
+  }
+
+  // Check if digits is valid 6 numbers and not already taken by another product
+  if (digits.length === 6) {
+    const existing = await mongoose.model('Product').findOne({
+      _id: { $ne: this._id },
+      $or: [{ productId: digits }, { sku: digits }]
+    }).lean();
+    if (!existing) {
+      this.productId = digits;
+      this.sku = digits;
+      return;
     }
   }
-  if (!this.sku) {
-    this.sku = this.productId;
+
+  // If missing or taken by another product, find the next available sequential 6-digit ID
+  const allProducts = await mongoose.model('Product').find({ _id: { $ne: this._id } }, 'productId sku').lean();
+  const taken = new Set(
+    allProducts
+      .flatMap(p => [p.productId, p.sku])
+      .filter(id => id && /^\d{6}$/.test(String(id).trim()))
+      .map(id => String(id).trim())
+  );
+
+  let nextNum = 100001;
+  while (taken.has(String(nextNum))) {
+    nextNum++;
   }
+
+  this.productId = String(nextNum);
+  this.sku = String(nextNum);
 });
 
 productSchema.post(['find', 'findOne'], function (docs) {
   if (!docs) return;
   const list = Array.isArray(docs) ? docs : [docs];
   list.forEach(doc => {
-    if (doc && !doc.productId) {
-      doc.productId = doc.sku || (doc._id ? `PRD-${String(doc._id).slice(-4).toUpperCase()}` : 'PRD-0001');
+    if (doc) {
+      // Ensure product ID is always strictly 6 numbers
+      if (!doc.productId || !/^\d{6}$/.test(String(doc.productId))) {
+        const raw = doc.productId || doc.sku || '';
+        const digits = String(raw).replace(/\D/g, '');
+        if (digits.length === 6) {
+          doc.productId = digits;
+        } else if (digits.length > 6) {
+          doc.productId = digits.slice(-6);
+        } else if (doc._id) {
+          doc.productId = String(parseInt(String(doc._id).slice(-6), 16) % 900000 + 100000);
+        } else {
+          doc.productId = Math.floor(100000 + Math.random() * 900000).toString();
+        }
+      }
+      if (!doc.sku || !/^\d{6}$/.test(String(doc.sku))) {
+        doc.sku = doc.productId;
+      }
     }
   });
 });

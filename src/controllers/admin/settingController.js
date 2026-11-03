@@ -33,6 +33,8 @@ const updateSettings = async (req, res) => {
     }
 
     const {
+      storeLogo,
+      storeName,
       contactPhone,
       altContactPhone,
       contactEmail,
@@ -50,8 +52,14 @@ const updateSettings = async (req, res) => {
       cloudinaryUploadPreset,
       adminName,
       adminEmail,
+      facebookUrl,
+      instagramUrl,
+      youtubeUrl,
+      pinterestUrl,
     } = req.body;
 
+    if (storeLogo !== undefined) settings.storeLogo = storeLogo;
+    if (storeName !== undefined) settings.storeName = storeName;
     if (contactPhone !== undefined) settings.contactPhone = contactPhone;
     if (altContactPhone !== undefined) settings.altContactPhone = altContactPhone;
     if (contactEmail !== undefined) settings.contactEmail = contactEmail;
@@ -69,6 +77,10 @@ const updateSettings = async (req, res) => {
     if (cloudinaryUploadPreset !== undefined) settings.cloudinaryUploadPreset = cloudinaryUploadPreset;
     if (adminName !== undefined) settings.adminName = adminName;
     if (adminEmail !== undefined) settings.adminEmail = adminEmail;
+    if (facebookUrl !== undefined) settings.facebookUrl = facebookUrl.trim();
+    if (instagramUrl !== undefined) settings.instagramUrl = instagramUrl.trim();
+    if (youtubeUrl !== undefined) settings.youtubeUrl = youtubeUrl.trim();
+    if (pinterestUrl !== undefined) settings.pinterestUrl = pinterestUrl.trim();
 
     const saved = await settings.save();
 

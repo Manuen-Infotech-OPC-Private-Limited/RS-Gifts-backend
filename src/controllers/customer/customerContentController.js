@@ -73,6 +73,8 @@ const getPublicSettings = async (req, res) => {
     res.status(200).json({
       success: true,
       settings: {
+        storeLogo: settings.storeLogo || '',
+        storeName: settings.storeName || 'RS GIFTS',
         contactPhone: settings.contactPhone || '',
         altContactPhone: settings.altContactPhone || '',
         contactEmail: settings.contactEmail || settings.supportEmail || '',
@@ -85,6 +87,10 @@ const getPublicSettings = async (req, res) => {
         standardShippingFee: settings.standardShippingFee,
         freeShippingThreshold: settings.freeShippingThreshold,
         cashOnDeliveryEnabled: settings.cashOnDeliveryEnabled,
+        facebookUrl: settings.facebookUrl || '',
+        instagramUrl: settings.instagramUrl || '',
+        youtubeUrl: settings.youtubeUrl || '',
+        pinterestUrl: settings.pinterestUrl || '',
       },
     });
   } catch (error) {

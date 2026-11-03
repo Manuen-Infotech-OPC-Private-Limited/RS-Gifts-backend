@@ -1,6 +1,16 @@
 import mongoose from 'mongoose';
 
 const settingSchema = new mongoose.Schema({
+  storeLogo: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+  storeName: {
+    type: String,
+    default: 'RS GIFTS',
+    trim: true,
+  },
   contactPhone: {
     type: String,
     default: '',
@@ -76,6 +86,26 @@ const settingSchema = new mongoose.Schema({
     trim: true,
   },
   adminEmail: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+  facebookUrl: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+  instagramUrl: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+  youtubeUrl: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+  pinterestUrl: {
     type: String,
     default: '',
     trim: true,
