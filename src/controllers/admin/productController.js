@@ -173,6 +173,11 @@ const createProduct = async (req, res) => {
         allowGiftWrap: false,
         allowGreetingCard: false,
       },
+      experienceTitle: req.body.experienceTitle || 'The RS Gifts Experience',
+      experienceText: req.body.experienceText || '',
+      inTheBox: req.body.inTheBox || '',
+      specifications: req.body.specifications || {},
+      shippingDetails: req.body.shippingDetails || {},
     });
 
     res.status(201).json({

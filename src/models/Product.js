@@ -93,6 +93,39 @@ const productSchema = new mongoose.Schema({
   ratings: {
     average: { type: Number, default: 0, min: 0, max: 5 },
     count: { type: Number, default: 0, min: 0 }
+  },
+  experienceTitle: {
+    type: String,
+    default: 'The RS Gifts Experience',
+    trim: true,
+  },
+  experienceText: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+  inTheBox: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+  specifications: {
+    material: { type: String, default: '', trim: true },
+    dimensions: { type: String, default: '', trim: true },
+    weight: { type: String, default: '', trim: true },
+    color: { type: String, default: '', trim: true },
+    countryOfOrigin: { type: String, default: 'India', trim: true },
+    careInstructions: { type: String, default: '', trim: true },
+    customSpecs: [{
+      key: { type: String, default: '', trim: true },
+      value: { type: String, default: '', trim: true }
+    }]
+  },
+  shippingDetails: {
+    dispatchTimeline: { type: String, default: '', trim: true },
+    transitTimeline: { type: String, default: '', trim: true },
+    freeShippingNote: { type: String, default: '', trim: true },
+    returnPolicy: { type: String, default: '', trim: true }
   }
 }, {
   timestamps: true,
