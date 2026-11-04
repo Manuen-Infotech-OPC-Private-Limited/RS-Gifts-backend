@@ -7,9 +7,11 @@ import generateToken from '../../utils/generateToken.js';
 // @access  Public
 const registerCustomer = async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, firstName, lastName, email, password, phone, avatar } = req.body;
 
-    if (!name || !email || !password) {
+    const fullName = (name || `${firstName || ''} ${lastName || ''}`).trim();
+
+    if (!fullName || !email || !password) {
       return res.status(400).json({
         success: false,
         message: 'Please provide name, email, and password',
@@ -31,10 +33,13 @@ const registerCustomer = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const customer = await User.create({
-      name: name.trim(),
+      name: fullName,
+      firstName: firstName ? firstName.trim() : (fullName.split(' ')[0] || ''),
+      lastName: lastName ? lastName.trim() : (fullName.split(' ').slice(1).join(' ') || ''),
       email: cleanEmail,
       password: hashedPassword,
-      phone: phone || '',
+      phone: phone ? phone.trim() : '',
+      avatar: avatar ? avatar.trim() : '',
       role: 'customer',
       isActive: true,
       lastLogin: new Date(),
@@ -49,8 +54,11 @@ const registerCustomer = async (req, res) => {
       user: {
         id: customer._id,
         name: customer.name,
+        firstName: customer.firstName,
+        lastName: customer.lastName,
         email: customer.email,
         phone: customer.phone,
+        avatar: customer.avatar,
         role: customer.role,
         addresses: customer.addresses,
       },
@@ -181,12 +189,13 @@ const updateCustomerProfile = async (req, res) => {
       });
     }
 
-    const { name, firstName, lastName, phone, dob, gender } = req.body;
+    const { name, firstName, lastName, phone, dob, gender, avatar } = req.body;
     if (firstName !== undefined) customer.firstName = firstName.trim();
     if (lastName !== undefined) customer.lastName = lastName.trim();
     if (dob !== undefined) customer.dob = dob.trim();
     if (gender !== undefined) customer.gender = gender.trim();
     if (phone !== undefined) customer.phone = phone.trim();
+    if (avatar !== undefined) customer.avatar = avatar.trim();
 
     if (name) {
       customer.name = name.trim();
@@ -208,6 +217,7 @@ const updateCustomerProfile = async (req, res) => {
         phone: customer.phone,
         dob: customer.dob || '',
         gender: customer.gender || '',
+        avatar: customer.avatar || '',
         addresses: customer.addresses,
       },
     });
