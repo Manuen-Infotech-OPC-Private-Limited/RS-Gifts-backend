@@ -7,7 +7,7 @@ import generateToken from '../../utils/generateToken.js';
 // @access  Public
 const registerCustomer = async (req, res) => {
   try {
-    const { name, firstName, lastName, email, password, phone, avatar } = req.body;
+    const { name, firstName, lastName, email, password, phone, avatar, address } = req.body;
 
     const fullName = (name || `${firstName || ''} ${lastName || ''}`).trim();
 
@@ -32,6 +32,22 @@ const registerCustomer = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    const cleanAddress = address ? address.trim() : '';
+    const initialAddresses = [];
+    if (cleanAddress) {
+      initialAddresses.push({
+        recipientName: fullName,
+        phone: phone ? phone.trim() : '',
+        addressLine1: cleanAddress,
+        addressLine2: '',
+        city: 'Hyderabad',
+        state: 'Telangana',
+        postalCode: '500001',
+        country: 'India',
+        isDefault: true,
+      });
+    }
+
     const customer = await User.create({
       name: fullName,
       firstName: firstName ? firstName.trim() : (fullName.split(' ')[0] || ''),
@@ -40,6 +56,8 @@ const registerCustomer = async (req, res) => {
       password: hashedPassword,
       phone: phone ? phone.trim() : '',
       avatar: avatar ? avatar.trim() : '',
+      address: cleanAddress,
+      addresses: initialAddresses,
       role: 'customer',
       isActive: true,
       lastLogin: new Date(),
@@ -59,6 +77,7 @@ const registerCustomer = async (req, res) => {
         email: customer.email,
         phone: customer.phone,
         avatar: customer.avatar,
+        address: customer.address || cleanAddress,
         role: customer.role,
         addresses: customer.addresses,
       },
@@ -131,6 +150,8 @@ const loginCustomer = async (req, res) => {
         name: customer.name,
         email: customer.email,
         phone: customer.phone,
+        avatar: customer.avatar || '',
+        address: customer.address || (customer.addresses?.[0]?.addressLine1 || ''),
         role: customer.role,
         addresses: customer.addresses,
       },
@@ -189,13 +210,14 @@ const updateCustomerProfile = async (req, res) => {
       });
     }
 
-    const { name, firstName, lastName, phone, dob, gender, avatar } = req.body;
+    const { name, firstName, lastName, phone, dob, gender, avatar, address } = req.body;
     if (firstName !== undefined) customer.firstName = firstName.trim();
     if (lastName !== undefined) customer.lastName = lastName.trim();
     if (dob !== undefined) customer.dob = dob.trim();
     if (gender !== undefined) customer.gender = gender.trim();
     if (phone !== undefined) customer.phone = phone.trim();
     if (avatar !== undefined) customer.avatar = avatar.trim();
+    if (address !== undefined) customer.address = address.trim();
 
     if (name) {
       customer.name = name.trim();
@@ -218,6 +240,7 @@ const updateCustomerProfile = async (req, res) => {
         dob: customer.dob || '',
         gender: customer.gender || '',
         avatar: customer.avatar || '',
+        address: customer.address || '',
         addresses: customer.addresses,
       },
     });

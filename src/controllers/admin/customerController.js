@@ -39,10 +39,12 @@ const getCustomers = async (req, res) => {
         const latestOrder = customerOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
 
         // Determine formatted primary location/address
-        let primaryAddress = '—';
-        if (c.addresses && c.addresses.length > 0) {
+        let primaryAddress = c.address || '—';
+        if (c.address) {
+          primaryAddress = c.address;
+        } else if (c.addresses && c.addresses.length > 0) {
           const def = c.addresses.find((a) => a.isDefault) || c.addresses[0];
-          primaryAddress = [def.city, def.state].filter(Boolean).join(', ') || def.addressLine1;
+          primaryAddress = def.addressLine1 || [def.city, def.state].filter(Boolean).join(', ') || '—';
         } else if (latestOrder && latestOrder.shippingAddress) {
           const s = latestOrder.shippingAddress;
           primaryAddress = [s.city, s.state].filter(Boolean).join(', ');
@@ -125,6 +127,7 @@ const getCustomerById = async (req, res) => {
         phone: customer.phone || 'N/A',
         dob: customer.dob || '',
         gender: customer.gender || '',
+        address: customer.address || (customer.addresses?.[0]?.addressLine1 || ''),
         addresses: customer.addresses || [],
         isActive: customer.isActive !== false,
         createdAt: customer.createdAt,
