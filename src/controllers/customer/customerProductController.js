@@ -112,12 +112,11 @@ const getCustomerProducts = async (req, res) => {
       const p = prod.toObject ? prod.toObject() : { ...prod };
       p.rating = Number(p.rating !== undefined ? p.rating : (p.ratings?.average !== undefined ? p.ratings.average : 5));
       p.reviews = Number(p.ratings?.count !== undefined ? p.ratings.count : (p.reviews !== undefined ? p.reviews : 0));
-      if (p.price && p.salePrice && p.price > p.salePrice) {
-        const pct = Math.round(((p.price - p.salePrice) / p.price) * 100);
-        p.discount = `${pct}% OFF`;
-      } else {
-        p.discount = '';
-      }
+      const actualPrice = p.salePrice || p.price || 0;
+      p.price = actualPrice;
+      p.salePrice = actualPrice;
+      p.originalPrice = actualPrice;
+      p.discount = '';
       return p;
     });
 
@@ -154,12 +153,11 @@ const getFeaturedProducts = async (req, res) => {
       const p = prod.toObject ? prod.toObject() : { ...prod };
       p.rating = Number(p.rating !== undefined ? p.rating : (p.ratings?.average !== undefined ? p.ratings.average : 5));
       p.reviews = Number(p.ratings?.count !== undefined ? p.ratings.count : (p.reviews !== undefined ? p.reviews : 0));
-      if (p.price && p.salePrice && p.price > p.salePrice) {
-        const pct = Math.round(((p.price - p.salePrice) / p.price) * 100);
-        p.discount = `${pct}% OFF`;
-      } else {
-        p.discount = '';
-      }
+      const actualPrice = p.salePrice || p.price || 0;
+      p.price = actualPrice;
+      p.salePrice = actualPrice;
+      p.originalPrice = actualPrice;
+      p.discount = '';
       return p;
     });
 
