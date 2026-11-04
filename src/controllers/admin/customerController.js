@@ -1,17 +1,19 @@
 import User from '../../models/User.js';
 import Order from '../../models/Order.js';
 
-// @desc    Get all customers with aggregated spending and order counts
+// @desc    Get all customers with aggregated spending, profile fields and order counts
 // @route   GET /api/admin/customers
 // @access  Private (Admin)
 const getCustomers = async (req, res) => {
   try {
     const { search } = req.query;
-    const filter = { role: 'customer' };
+    const filter = { role: { $ne: 'admin' } };
 
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: 'i' } },
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } },
         { phone: { $regex: search, $options: 'i' } },
       ];
@@ -19,7 +21,7 @@ const getCustomers = async (req, res) => {
 
     const customers = await User.find(filter).sort({ createdAt: -1 });
 
-    // Aggregate orders for each customer
+    // Aggregate orders and profile data for each customer
     const enhancedCustomers = await Promise.all(
       customers.map(async (c) => {
         const customerOrders = await Order.find({
@@ -36,17 +38,38 @@ const getCustomers = async (req, res) => {
 
         const latestOrder = customerOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
 
+        // Determine formatted primary location/address
+        let primaryAddress = '—';
+        if (c.addresses && c.addresses.length > 0) {
+          const def = c.addresses.find((a) => a.isDefault) || c.addresses[0];
+          primaryAddress = [def.city, def.state].filter(Boolean).join(', ') || def.addressLine1;
+        } else if (latestOrder && latestOrder.shippingAddress) {
+          const s = latestOrder.shippingAddress;
+          primaryAddress = [s.city, s.state].filter(Boolean).join(', ');
+        }
+
+        const fullName = c.name || `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'Customer';
+
         return {
-          id: c._id,
-          name: c.name,
+          id: c._id.toString(),
+          _id: c._id.toString(),
+          name: fullName,
+          firstName: c.firstName || (fullName.split(' ')[0] || ''),
+          lastName: c.lastName || (fullName.split(' ').slice(1).join(' ') || ''),
           email: c.email,
           phone: c.phone || 'N/A',
-          isActive: c.isActive,
+          dob: c.dob || '',
+          gender: c.gender || '',
+          address: primaryAddress,
+          addresses: c.addresses || [],
+          addressesCount: (c.addresses || []).length,
+          isActive: c.isActive !== false,
           totalOrders,
           totalSpent,
-          lastOrderDate: latestOrder ? latestOrder.createdAt : null,
-          joinedAt: c.createdAt,
-          addressesCount: (c.addresses || []).length,
+          lastOrderDate: latestOrder ? new Date(latestOrder.createdAt).toLocaleDateString() : 'No orders',
+          joinedAt: c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '—',
+          createdAt: c.createdAt,
+          lastLogin: c.lastLogin,
         };
       })
     );
@@ -88,16 +111,24 @@ const getCustomerById = async (req, res) => {
       return sum;
     }, 0);
 
+    const fullName = customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'Customer';
+
     res.status(200).json({
       success: true,
       customer: {
-        id: customer._id,
-        name: customer.name,
+        id: customer._id.toString(),
+        _id: customer._id.toString(),
+        name: fullName,
+        firstName: customer.firstName || (fullName.split(' ')[0] || ''),
+        lastName: customer.lastName || (fullName.split(' ').slice(1).join(' ') || ''),
         email: customer.email,
-        phone: customer.phone,
-        isActive: customer.isActive,
-        addresses: customer.addresses,
+        phone: customer.phone || 'N/A',
+        dob: customer.dob || '',
+        gender: customer.gender || '',
+        addresses: customer.addresses || [],
+        isActive: customer.isActive !== false,
         createdAt: customer.createdAt,
+        lastLogin: customer.lastLogin,
         totalOrders: orders.length,
         totalSpent,
       },
@@ -131,7 +162,8 @@ const toggleCustomerStatus = async (req, res) => {
       success: true,
       message: `Customer account is now ${customer.isActive ? 'Active' : 'Blocked'}`,
       customer: {
-        id: customer._id,
+        id: customer._id.toString(),
+        _id: customer._id.toString(),
         name: customer.name,
         isActive: customer.isActive,
       },

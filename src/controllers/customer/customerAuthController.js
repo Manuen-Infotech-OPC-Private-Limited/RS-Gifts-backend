@@ -181,9 +181,18 @@ const updateCustomerProfile = async (req, res) => {
       });
     }
 
-    const { name, phone } = req.body;
-    if (name) customer.name = name.trim();
+    const { name, firstName, lastName, phone, dob, gender } = req.body;
+    if (firstName !== undefined) customer.firstName = firstName.trim();
+    if (lastName !== undefined) customer.lastName = lastName.trim();
+    if (dob !== undefined) customer.dob = dob.trim();
+    if (gender !== undefined) customer.gender = gender.trim();
     if (phone !== undefined) customer.phone = phone.trim();
+
+    if (name) {
+      customer.name = name.trim();
+    } else if (customer.firstName || customer.lastName) {
+      customer.name = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || customer.name;
+    }
 
     await customer.save();
 
@@ -193,8 +202,12 @@ const updateCustomerProfile = async (req, res) => {
       user: {
         id: customer._id,
         name: customer.name,
+        firstName: customer.firstName || (customer.name?.split(' ')[0] || ''),
+        lastName: customer.lastName || (customer.name?.split(' ').slice(1).join(' ') || ''),
         email: customer.email,
         phone: customer.phone,
+        dob: customer.dob || '',
+        gender: customer.gender || '',
         addresses: customer.addresses,
       },
     });

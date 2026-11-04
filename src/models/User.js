@@ -41,6 +41,24 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  firstName: {
+    type: String,
+    trim: true,
+    default: '',
+  },
+  lastName: {
+    type: String,
+    trim: true,
+    default: '',
+  },
+  dob: {
+    type: String,
+    default: '',
+  },
+  gender: {
+    type: String,
+    default: '',
+  },
   avatar: {
     type: String,
     default: '',
