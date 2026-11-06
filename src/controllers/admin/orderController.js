@@ -1,6 +1,26 @@
 import Order from '../../models/Order.js';
 import { restockInventory } from '../../services/orderService.js';
 
+// Helper to find an order by MongoDB _id or 6-char orderNumber (e.g. RSR78Q)
+const findOrderByIdOrNumber = async (id, populateCustomer = false) => {
+  if (!id) return null;
+  const str = String(id).trim();
+  let query = null;
+  if (/^[0-9a-fA-F]{24}$/.test(str)) {
+    query = Order.findById(str);
+  } else {
+    query = Order.findOne({ orderNumber: str.toUpperCase() });
+  }
+  if (populateCustomer) {
+    query = query.populate('customer', 'name email phone');
+  }
+  let order = await query;
+  if (!order && /^[0-9a-fA-F]{24}$/.test(str)) {
+    order = await Order.findOne({ orderNumber: str.toUpperCase() });
+  }
+  return order;
+};
+
 // @desc    Get all orders with filtering and search
 // @route   GET /api/admin/orders
 // @access  Private (Admin)
@@ -56,7 +76,7 @@ const getOrders = async (req, res) => {
 // @access  Private (Admin)
 const getOrderById = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id).populate('customer', 'name email phone');
+    const order = await findOrderByIdOrNumber(req.params.id, true);
     if (!order) {
       return res.status(404).json({
         success: false,
@@ -91,7 +111,7 @@ const updateOrderStatus = async (req, res) => {
       });
     }
 
-    const order = await Order.findById(req.params.id);
+    const order = await findOrderByIdOrNumber(req.params.id);
     if (!order) {
       return res.status(404).json({
         success: false,
@@ -144,7 +164,7 @@ const updatePaymentStatus = async (req, res) => {
       });
     }
 
-    const order = await Order.findById(req.params.id);
+    const order = await findOrderByIdOrNumber(req.params.id);
     if (!order) {
       return res.status(404).json({
         success: false,
@@ -158,6 +178,15 @@ const updatePaymentStatus = async (req, res) => {
     res.status(200).json({
       success: true,
       message: `Order #${order.orderNumber} payment marked as "${paymentStatus}"`,
+      order: updated,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
       order: updated,
     });
   } catch (error) {
