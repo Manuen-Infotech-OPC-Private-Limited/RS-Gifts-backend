@@ -11,12 +11,13 @@ const findOrderByIdOrNumber = async (id, populateCustomer = false) => {
   } else {
     query = Order.findOne({ orderNumber: str.toUpperCase() });
   }
+  query = query.populate('items.product', 'title image images sku productId price category active');
   if (populateCustomer) {
     query = query.populate('customer', 'name email phone');
   }
   let order = await query;
   if (!order && /^[0-9a-fA-F]{24}$/.test(str)) {
-    order = await Order.findOne({ orderNumber: str.toUpperCase() });
+    order = await Order.findOne({ orderNumber: str.toUpperCase() }).populate('items.product', 'title image images sku productId price category active');
   }
   return order;
 };
@@ -46,7 +47,7 @@ const getOrders = async (req, res) => {
       ];
     }
 
-    let query = Order.find(filter);
+    let query = Order.find(filter).populate('items.product', 'title image images sku productId price category active');
 
     if (sort === 'oldest') {
       query = query.sort({ createdAt: 1 });
