@@ -87,8 +87,8 @@ const getCustomerProducts = async (req, res) => {
         .map((t) => t.trim())
         .filter((t) => t.length > 0);
 
-      // Create singular/plural regex for each token
-      const tokenRegexes = tokens.map((t) => {
+      // Create singular/plural regex strings for each token
+      const tokenStrings = tokens.map((t) => {
         let base = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         if (base.toLowerCase().endsWith('ies') && base.length > 4) {
           base = base.slice(0, -3) + '(y|ies)';
@@ -99,7 +99,7 @@ const getCustomerProducts = async (req, res) => {
         } else {
           base = `${base}s?`;
         }
-        return new RegExp(base, 'i');
+        return base;
       });
 
       // Search fields criteria
@@ -116,15 +116,15 @@ const getCustomerProducts = async (req, res) => {
       ];
 
       // Add individual token matches for every token
-      tokenRegexes.forEach((reg) => {
+      tokenStrings.forEach((str) => {
         searchConditions.push(
-          { title: { $regex: reg } },
-          { category: { $regex: reg } },
-          { description: { $regex: reg } },
-          { targetPage: { $regex: reg } },
-          { targetPages: { $elemMatch: { $regex: reg } } },
-          { categories: { $elemMatch: { $regex: reg } } },
-          { occasions: { $elemMatch: { $regex: reg } } }
+          { title: { $regex: str, $options: 'i' } },
+          { category: { $regex: str, $options: 'i' } },
+          { description: { $regex: str, $options: 'i' } },
+          { targetPage: { $regex: str, $options: 'i' } },
+          { targetPages: { $elemMatch: { $regex: str, $options: 'i' } } },
+          { categories: { $elemMatch: { $regex: str, $options: 'i' } } },
+          { occasions: { $elemMatch: { $regex: str, $options: 'i' } } }
         );
       });
 
