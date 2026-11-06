@@ -29,7 +29,6 @@ const reviewSchema = new mongoose.Schema({
   },
   comment: {
     type: String,
-    required: [true, 'Review comment is required'],
     trim: true,
   },
   isApproved: {

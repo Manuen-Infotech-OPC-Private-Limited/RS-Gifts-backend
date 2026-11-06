@@ -161,8 +161,8 @@ const createProduct = async (req, res) => {
       salePrice: salePrice !== undefined && salePrice !== '' ? Number(salePrice) : Number(price),
       stock: stock !== undefined ? Number(stock) : 0,
       lowStockThreshold: lowStockThreshold ? Number(lowStockThreshold) : 5,
-      image: image || '',
-      gallery: gallery || [],
+      image: image || (Array.isArray(gallery) && gallery[0]) || '',
+      gallery: Array.isArray(gallery) && gallery.length > 0 ? gallery.filter(Boolean) : (image ? [image] : []),
       active: active !== undefined ? Boolean(active) : true,
       featured: featured !== undefined ? Boolean(featured) : false,
       rating: req.body.rating !== undefined ? Number(req.body.rating) : 5,
@@ -270,6 +270,14 @@ const updateProduct = async (req, res) => {
     // Auto-generate updated slug if title changes and no new slug is provided
     if (updateData.title && !updateData.slug && updateData.title.trim() !== product.title) {
       updateData.slug = updateData.title.toLowerCase().trim().replace(/[^\w ]+/g, '').replace(/ +/g, '-') + '-' + Math.floor(1000 + Math.random() * 9000);
+    }
+
+    if (updateData.gallery !== undefined || updateData.image !== undefined) {
+      const existingGal = Array.isArray(updateData.gallery) ? updateData.gallery.filter(Boolean) : (Array.isArray(product.gallery) ? product.gallery.filter(Boolean) : []);
+      const primaryImg = updateData.image || existingGal[0] || product.image || '';
+      const finalGal = existingGal.includes(primaryImg) ? existingGal : (primaryImg ? [primaryImg, ...existingGal] : []);
+      updateData.image = primaryImg;
+      updateData.gallery = finalGal;
     }
 
     const updated = await Product.findByIdAndUpdate(
