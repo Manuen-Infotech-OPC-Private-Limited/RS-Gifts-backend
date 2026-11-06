@@ -188,15 +188,6 @@ const updatePaymentStatus = async (req, res) => {
     });
   }
 };
-      order: updated,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
 
 // @desc    Update courier tracking information
 // @route   PATCH /api/admin/orders/:id/tracking
