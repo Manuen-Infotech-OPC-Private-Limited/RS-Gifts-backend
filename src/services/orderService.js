@@ -111,14 +111,23 @@ const calculateOrderPricing = async (items = [], couponCode = null) => {
   }
 
   // Fetch store shipping settings
-  const settings = (await Setting.findOne()) || {
-    standardShippingFee: 50,
-    freeShippingThreshold: 999,
-  };
+  const settings = await Setting.findOne();
+  const standardFee = (settings && settings.standardShippingFee !== undefined && settings.standardShippingFee !== null)
+    ? Number(settings.standardShippingFee)
+    : 0;
+  const freeThreshold = (settings && settings.freeShippingThreshold !== undefined && settings.freeShippingThreshold !== null)
+    ? Number(settings.freeShippingThreshold)
+    : 0;
 
   let shippingFee = 0;
-  if (subtotal < (settings.freeShippingThreshold || 999)) {
-    shippingFee = settings.standardShippingFee || 50;
+  if (standardFee > 0) {
+    if (freeThreshold > 0 && subtotal >= freeThreshold) {
+      shippingFee = 0;
+    } else {
+      shippingFee = standardFee;
+    }
+  } else {
+    shippingFee = 0;
   }
 
   // Evaluate coupon discount
