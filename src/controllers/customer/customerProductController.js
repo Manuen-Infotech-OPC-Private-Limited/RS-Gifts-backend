@@ -77,12 +77,66 @@ const getCustomerProducts = async (req, res) => {
       filter.stock = { $gt: 0 };
     }
 
-    if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { category: { $regex: search, $options: 'i' } },
+    if (search && String(search).trim()) {
+      const rawSearch = String(search).trim();
+      const escapedFull = rawSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+      // Tokenize terms: split by spaces and punctuation
+      const tokens = rawSearch
+        .split(/[\s,+/_-]+/)
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0);
+
+      // Create singular/plural regex for each token
+      const tokenRegexes = tokens.map((t) => {
+        let base = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (base.toLowerCase().endsWith('ies') && base.length > 4) {
+          base = base.slice(0, -3) + '(y|ies)';
+        } else if (base.toLowerCase().endsWith('es') && base.length > 3) {
+          base = base.slice(0, -2) + '(es)?';
+        } else if (base.toLowerCase().endsWith('s') && base.length > 2) {
+          base = base.slice(0, -1) + 's?';
+        } else {
+          base = `${base}s?`;
+        }
+        return new RegExp(base, 'i');
+      });
+
+      // Search fields criteria
+      const searchConditions = [
+        { title: { $regex: escapedFull, $options: 'i' } },
+        { description: { $regex: escapedFull, $options: 'i' } },
+        { category: { $regex: escapedFull, $options: 'i' } },
+        { targetPage: { $regex: escapedFull, $options: 'i' } },
+        { targetPages: { $elemMatch: { $regex: escapedFull, $options: 'i' } } },
+        { categories: { $elemMatch: { $regex: escapedFull, $options: 'i' } } },
+        { occasions: { $elemMatch: { $regex: escapedFull, $options: 'i' } } },
+        { sku: { $regex: escapedFull, $options: 'i' } },
+        { productId: { $regex: escapedFull, $options: 'i' } },
       ];
+
+      // Add individual token matches for every token
+      tokenRegexes.forEach((reg) => {
+        searchConditions.push(
+          { title: { $regex: reg } },
+          { category: { $regex: reg } },
+          { description: { $regex: reg } },
+          { targetPage: { $regex: reg } },
+          { targetPages: { $elemMatch: { $regex: reg } } },
+          { categories: { $elemMatch: { $regex: reg } } },
+          { occasions: { $elemMatch: { $regex: reg } } }
+        );
+      });
+
+      if (filter.$or) {
+        filter.$and = [
+          { $or: filter.$or },
+          { $or: searchConditions },
+        ];
+        delete filter.$or;
+      } else {
+        filter.$or = searchConditions;
+      }
     }
 
     let query = Product.find(filter);
@@ -119,6 +173,34 @@ const getCustomerProducts = async (req, res) => {
       p.discount = '';
       return p;
     });
+
+    if (search && String(search).trim() && (!sort || sort === 'featured' || sort === 'relevance')) {
+      const lowerQ = String(search).toLowerCase().trim();
+      formattedProducts.sort((a, b) => {
+        const aTitle = (a.title || a.name || '').toLowerCase();
+        const bTitle = (b.title || b.name || '').toLowerCase();
+        const aCat = (a.category || '').toLowerCase();
+        const bCat = (b.category || '').toLowerCase();
+
+        const aExact = aTitle === lowerQ ? 100 : 0;
+        const bExact = bTitle === lowerQ ? 100 : 0;
+        if (aExact !== bExact) return bExact - aExact;
+
+        const aStarts = aTitle.startsWith(lowerQ) ? 50 : 0;
+        const bStarts = bTitle.startsWith(lowerQ) ? 50 : 0;
+        if (aStarts !== bStarts) return bStarts - aStarts;
+
+        const aContains = aTitle.includes(lowerQ) ? 30 : 0;
+        const bContains = bTitle.includes(lowerQ) ? 30 : 0;
+        if (aContains !== bContains) return bContains - aContains;
+
+        const aCatMatch = aCat.includes(lowerQ) ? 20 : 0;
+        const bCatMatch = bCat.includes(lowerQ) ? 20 : 0;
+        if (aCatMatch !== bCatMatch) return bCatMatch - aCatMatch;
+
+        return 0;
+      });
+    }
 
     res.status(200).json({
       success: true,
