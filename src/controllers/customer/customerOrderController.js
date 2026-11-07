@@ -1,5 +1,6 @@
 import Order from '../../models/Order.js';
 import Coupon from '../../models/Coupon.js';
+import User from '../../models/User.js';
 import { generateOrderNumber,
   calculateOrderPricing,
   deductInventory,
@@ -86,6 +87,46 @@ const createCustomerOrder = async (req, res) => {
 
     // Note: Stock is NOT deducted on order placement.
     // Stock is deducted only when Admin marks the order status as "Delivered".
+
+    // Auto-save shipping address to customer profile so it always reflects in Customer profile & Admin
+    try {
+      const userDoc = req.user 
+        ? await User.findById(req.user._id)
+        : await User.findOne({ email: customerInfo.email.toLowerCase().trim() });
+
+      if (userDoc) {
+        const fullAddrStr = [shippingAddress.addressLine1, shippingAddress.addressLine2, shippingAddress.city, shippingAddress.state, shippingAddress.postalCode].filter(Boolean).join(', ');
+        if (!userDoc.address || userDoc.address === '—' || userDoc.address === 'Not provided') {
+          userDoc.address = fullAddrStr;
+        }
+
+        const cleanLine1 = shippingAddress.addressLine1.trim().toLowerCase();
+        const cleanPin = String(shippingAddress.postalCode || '').trim();
+        const alreadyHasAddr = (userDoc.addresses || []).some((a) => {
+          const aLine = (a.addressLine1 || '').trim().toLowerCase();
+          const aPin = String(a.postalCode || '').trim();
+          return aLine === cleanLine1 || (aLine.includes(cleanLine1) && aPin === cleanPin);
+        });
+
+        if (!alreadyHasAddr) {
+          userDoc.addresses.push({
+            recipientName: shippingAddress.recipientName.trim(),
+            phone: shippingAddress.phone.trim(),
+            addressLine1: shippingAddress.addressLine1.trim(),
+            addressLine2: shippingAddress.addressLine2 ? shippingAddress.addressLine2.trim() : '',
+            city: shippingAddress.city.trim(),
+            state: shippingAddress.state.trim(),
+            postalCode: shippingAddress.postalCode.trim(),
+            country: shippingAddress.country || 'India',
+            isDefault: userDoc.addresses.length === 0,
+          });
+        }
+
+        await userDoc.save();
+      }
+    } catch (saveErr) {
+      console.warn('Auto-save shipping address to user profile warning:', saveErr.message);
+    }
 
     // Increment coupon usedCount if coupon was applied
     if (pricing.appliedCoupon) {

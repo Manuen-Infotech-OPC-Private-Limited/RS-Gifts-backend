@@ -147,13 +147,18 @@ const loginCustomer = async (req, res) => {
       token,
       user: {
         id: customer._id,
+        _id: customer._id,
         name: customer.name,
+        firstName: customer.firstName || (customer.name?.split(' ')[0] || ''),
+        lastName: customer.lastName || (customer.name?.split(' ').slice(1).join(' ') || ''),
         email: customer.email,
-        phone: customer.phone,
+        phone: customer.phone || '',
+        dob: customer.dob || '',
+        gender: customer.gender || '',
         avatar: customer.avatar || '',
         address: customer.address || (customer.addresses?.[0]?.addressLine1 || ''),
         role: customer.role,
-        addresses: customer.addresses,
+        addresses: customer.addresses || [],
       },
     });
   } catch (error) {
@@ -169,7 +174,8 @@ const loginCustomer = async (req, res) => {
 // @access  Private (Customer)
 const getCustomerProfile = async (req, res) => {
   try {
-    const customer = await User.findById(req.user.id);
+    const userId = req.user?._id || req.user?.id || req.user;
+    const customer = await User.findById(userId);
     if (!customer) {
       return res.status(404).json({
         success: false,
@@ -181,11 +187,18 @@ const getCustomerProfile = async (req, res) => {
       success: true,
       user: {
         id: customer._id,
+        _id: customer._id,
         name: customer.name,
+        firstName: customer.firstName || (customer.name?.split(' ')[0] || ''),
+        lastName: customer.lastName || (customer.name?.split(' ').slice(1).join(' ') || ''),
         email: customer.email,
-        phone: customer.phone,
+        phone: customer.phone || '',
+        dob: customer.dob || '',
+        gender: customer.gender || '',
+        avatar: customer.avatar || '',
+        address: customer.address || (customer.addresses?.[0]?.addressLine1 || ''),
         role: customer.role,
-        addresses: customer.addresses,
+        addresses: customer.addresses || [],
         createdAt: customer.createdAt,
       },
     });
@@ -202,7 +215,8 @@ const getCustomerProfile = async (req, res) => {
 // @access  Private (Customer)
 const updateCustomerProfile = async (req, res) => {
   try {
-    const customer = await User.findById(req.user.id);
+    const userId = req.user?._id || req.user?.id || req.user;
+    const customer = await User.findById(userId);
     if (!customer) {
       return res.status(404).json({
         success: false,
@@ -211,21 +225,23 @@ const updateCustomerProfile = async (req, res) => {
     }
 
     const { name, firstName, lastName, phone, dob, gender, avatar, address } = req.body;
-    if (firstName !== undefined) customer.firstName = firstName.trim();
-    if (lastName !== undefined) customer.lastName = lastName.trim();
-    if (dob !== undefined) customer.dob = dob.trim();
-    if (gender !== undefined) customer.gender = gender.trim();
-    if (phone !== undefined) customer.phone = phone.trim();
-    if (avatar !== undefined) customer.avatar = avatar.trim();
-    if (address !== undefined) customer.address = address.trim();
+    const safeTrim = (v) => (v !== null && v !== undefined ? String(v).trim() : '');
+
+    if (firstName !== undefined) customer.firstName = safeTrim(firstName);
+    if (lastName !== undefined) customer.lastName = safeTrim(lastName);
+    if (dob !== undefined) customer.dob = safeTrim(dob);
+    if (gender !== undefined) customer.gender = safeTrim(gender);
+    if (phone !== undefined) customer.phone = safeTrim(phone);
+    if (avatar !== undefined) customer.avatar = safeTrim(avatar);
+    if (address !== undefined) customer.address = safeTrim(address);
 
     if (name) {
-      customer.name = name.trim();
+      customer.name = safeTrim(name);
     } else if (customer.firstName || customer.lastName) {
       customer.name = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || customer.name;
     }
 
-    await customer.save();
+    await customer.save({ validateBeforeSave: false });
 
     res.status(200).json({
       success: true,
@@ -285,6 +301,11 @@ const addCustomerAddress = async (req, res) => {
       country: country || 'India',
       isDefault: customer.addresses.length === 0 ? true : Boolean(isDefault),
     });
+
+    const fullAddr = [addressLine1, addressLine2, city, state, postalCode].filter(Boolean).join(', ');
+    if (!customer.address || customer.address === '—' || customer.address === 'Not provided' || isDefault) {
+      customer.address = fullAddr;
+    }
 
     await customer.save();
 
