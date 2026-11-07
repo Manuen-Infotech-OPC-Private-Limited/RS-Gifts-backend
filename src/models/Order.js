@@ -104,6 +104,14 @@ const orderSchema = new mongoose.Schema({
     enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
     default: 'Pending',
   },
+  inventoryDeducted: {
+    type: Boolean,
+    default: false,
+  },
+  inventoryDeductedAt: {
+    type: Date,
+    default: null,
+  },
   tracking: {
     carrier: { type: String, default: '' },
     trackingNumber: { type: String, default: '' },

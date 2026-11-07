@@ -1,5 +1,5 @@
 import Order from '../../models/Order.js';
-import { restockInventory } from '../../services/orderService.js';
+import { deductInventory, restockInventory } from '../../services/orderService.js';
 
 // Helper to find an order by MongoDB _id or 6-char orderNumber (e.g. RSR78Q)
 const findOrderByIdOrNumber = async (id, populateCustomer = false) => {
@@ -123,9 +123,17 @@ const updateOrderStatus = async (req, res) => {
     const previousStatus = order.orderStatus;
     order.orderStatus = status;
 
-    // If order is newly cancelled, restock the product inventory
-    if (status === 'Cancelled' && previousStatus !== 'Cancelled') {
+    // Deduct stock ONLY when order status becomes 'Delivered'
+    if (status === 'Delivered' && !order.inventoryDeducted) {
+      await deductInventory(order.items);
+      order.inventoryDeducted = true;
+      order.inventoryDeductedAt = new Date();
+    } 
+    // If order was previously marked Delivered (stock was deducted), and admin now moves it to another status
+    else if (status !== 'Delivered' && order.inventoryDeducted) {
       await restockInventory(order.items);
+      order.inventoryDeducted = false;
+      order.inventoryDeductedAt = null;
     }
 
     // Append to status history
@@ -250,10 +258,10 @@ const deleteOrder = async (req, res) => {
   try {
     let order = null;
     if (req.params.id && req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
-      order = await Order.findByIdAndDelete(req.params.id);
+      order = await Order.findById(req.params.id);
     }
     if (!order) {
-      order = await Order.findOneAndDelete({ orderNumber: req.params.id.toUpperCase() });
+      order = await Order.findOne({ orderNumber: req.params.id.toUpperCase() });
     }
 
     if (!order) {
@@ -262,6 +270,13 @@ const deleteOrder = async (req, res) => {
         message: 'Order not found',
       });
     }
+
+    // If order was delivered (stock was deducted), restore stock before deleting
+    if (order.inventoryDeducted) {
+      await restockInventory(order.items);
+    }
+
+    await order.deleteOne();
 
     res.status(200).json({
       success: true,

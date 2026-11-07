@@ -73,6 +73,7 @@ const createCustomerOrder = async (req, res) => {
       paymentMethod: paymentMethod || 'COD',
       paymentStatus: paymentMethod === 'COD' ? 'Pending' : 'Pending',
       orderStatus: 'Pending',
+      inventoryDeducted: false,
       notes: notes || '',
       statusHistory: [
         {
@@ -83,8 +84,8 @@ const createCustomerOrder = async (req, res) => {
       ],
     });
 
-    // Deduct stock for ordered items
-    await deductInventory(pricing.verifiedItems);
+    // Note: Stock is NOT deducted on order placement.
+    // Stock is deducted only when Admin marks the order status as "Delivered".
 
     // Increment coupon usedCount if coupon was applied
     if (pricing.appliedCoupon) {
@@ -204,10 +205,14 @@ const cancelCustomerOrder = async (req, res) => {
       note: req.body.reason || 'Order cancelled by customer',
     });
 
-    await order.save();
+    // Restock the product inventory only if it was previously deducted (e.g., delivered)
+    if (order.inventoryDeducted) {
+      await restockInventory(order.items);
+      order.inventoryDeducted = false;
+      order.inventoryDeductedAt = null;
+    }
 
-    // Restock the product inventory
-    await restockInventory(order.items);
+    await order.save();
 
     res.status(200).json({
       success: true,

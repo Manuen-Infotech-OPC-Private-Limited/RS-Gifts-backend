@@ -162,21 +162,36 @@ const calculateOrderPricing = async (items = [], couponCode = null) => {
   };
 };
 
-// Deduct inventory when order is confirmed
+// Deduct inventory when order is marked as Delivered by admin
 const deductInventory = async (items) => {
+  if (!items || !Array.isArray(items)) return;
   for (const item of items) {
-    await Product.findByIdAndUpdate(item.product, {
-      $inc: { stock: -item.quantity },
-    });
+    const prodId = item.product?._id || item.product || item.id || item._id;
+    const qty = Math.max(1, parseInt(item.quantity, 10) || 1);
+    if (prodId) {
+      const updated = await Product.findByIdAndUpdate(
+        prodId,
+        { $inc: { stock: -qty } },
+        { new: true }
+      );
+      if (updated && updated.stock < 0) {
+        await Product.findByIdAndUpdate(prodId, { $set: { stock: 0 } });
+      }
+    }
   }
 };
 
-// Restock inventory when order is cancelled
+// Restock inventory when an order moves away from Delivered (or Delivered order is cancelled)
 const restockInventory = async (items) => {
+  if (!items || !Array.isArray(items)) return;
   for (const item of items) {
-    await Product.findByIdAndUpdate(item.product, {
-      $inc: { stock: item.quantity },
-    });
+    const prodId = item.product?._id || item.product || item.id || item._id;
+    const qty = Math.max(1, parseInt(item.quantity, 10) || 1);
+    if (prodId) {
+      await Product.findByIdAndUpdate(prodId, {
+        $inc: { stock: qty },
+      });
+    }
   }
 };
 
