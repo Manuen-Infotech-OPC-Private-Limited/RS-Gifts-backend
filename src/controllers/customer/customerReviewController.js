@@ -43,10 +43,10 @@ const createCustomerReview = async (req, res) => {
   try {
     const { productId, rating, comment, customerName, customerEmail } = req.body;
 
-    if (!productId || !rating || !comment) {
+    if (!productId || !rating) {
       return res.status(400).json({
         success: false,
-        message: 'Product ID, rating (1-5), and review comment are required',
+        message: 'Product ID and rating (1-5) are required',
       });
     }
 
@@ -74,7 +74,7 @@ const createCustomerReview = async (req, res) => {
       customerName: name,
       customerEmail: email,
       rating: Number(rating),
-      comment: comment.trim(),
+      comment: comment ? comment.trim() : '',
       isApproved: true, // Visible by default on customer store
     });
 
