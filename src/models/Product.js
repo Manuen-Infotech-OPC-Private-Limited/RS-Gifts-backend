@@ -56,6 +56,11 @@ const productSchema = new mongoose.Schema({
     default: null,
     min: [0, 'Sale price must be non-negative'],
   },
+  offerTag: {
+    type: String,
+    default: '',
+    trim: true,
+  },
   stock: {
     type: Number,
     required: [true, 'Stock quantity is required'],

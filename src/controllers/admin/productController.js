@@ -159,6 +159,7 @@ const createProduct = async (req, res) => {
       targetPage: req.body.targetPage || (Array.isArray(req.body.targetPages) && req.body.targetPages[0]) || category || '',
       price: Number(price),
       salePrice: salePrice !== undefined && salePrice !== '' ? Number(salePrice) : Number(price),
+      offerTag: req.body.offerTag ? String(req.body.offerTag).trim() : '',
       stock: stock !== undefined ? Number(stock) : 0,
       lowStockThreshold: lowStockThreshold ? Number(lowStockThreshold) : 5,
       image: image || (Array.isArray(gallery) && gallery[0]) || '',

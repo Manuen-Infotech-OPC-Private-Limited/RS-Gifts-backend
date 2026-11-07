@@ -28,17 +28,49 @@ const getActiveStoreDiscount = async () => {
   }
 };
 
+// Helper to format product with dynamic offer and pricing calculation
+const formatCustomerProduct = (prod) => {
+  const p = prod.toObject ? prod.toObject() : { ...prod };
+  p.rating = Number(p.rating !== undefined ? p.rating : (p.ratings?.average !== undefined ? p.ratings.average : 5));
+  p.reviews = Number(p.ratings?.count !== undefined ? p.ratings.count : (p.reviews !== undefined ? p.reviews : 0));
+  
+  const regPrice = Number(p.price || 0);
+  const rawSale = p.salePrice !== undefined && p.salePrice !== null && p.salePrice !== '' ? Number(p.salePrice) : null;
+  const hasOffer = rawSale !== null && rawSale > 0 && rawSale < regPrice;
+  const discountPercent = hasOffer ? Math.round(((regPrice - rawSale) / regPrice) * 100) : 0;
+  const savingsAmount = hasOffer ? (regPrice - rawSale) : 0;
+
+  p.price = hasOffer ? rawSale : regPrice;
+  p.originalPrice = hasOffer ? regPrice : (p.price || regPrice);
+  p.salePrice = rawSale;
+  p.hasOffer = hasOffer;
+  p.discountPercent = discountPercent;
+  p.discount = hasOffer ? `${discountPercent}% OFF` : '';
+  p.savingsAmount = savingsAmount;
+  p.offerTag = p.offerTag || (hasOffer ? `${discountPercent}% OFF` : '');
+  return p;
+};
+
 // @desc    Get active public products with filtering, search, and sorting
 // @route   GET /api/customer/products
 // @access  Public
 const getCustomerProducts = async (req, res) => {
   try {
-    const { category, occasion, targetPage, search, minPrice, maxPrice, inStock, sort, page = 1, limit = 50, featured } = req.query;
+    const { category, occasion, targetPage, search, minPrice, maxPrice, inStock, sort, page = 1, limit = 50, featured, offersOnly, offers } = req.query;
 
     const filter = { active: true };
 
     if (featured === 'true' || featured === true) {
       filter.featured = true;
+    }
+
+    if (offersOnly === 'true' || offersOnly === true || offers === 'true' || offers === true) {
+      filter.$expr = {
+        $and: [
+          { $gt: ['$salePrice', 0] },
+          { $lt: ['$salePrice', '$price'] }
+        ]
+      };
     }
 
     if (targetPage && targetPage !== 'ALL') {
@@ -162,17 +194,7 @@ const getCustomerProducts = async (req, res) => {
     const products = await query.skip(skip).limit(limitNum);
     const activeDiscount = await getActiveStoreDiscount();
 
-    const formattedProducts = products.map((prod) => {
-      const p = prod.toObject ? prod.toObject() : { ...prod };
-      p.rating = Number(p.rating !== undefined ? p.rating : (p.ratings?.average !== undefined ? p.ratings.average : 5));
-      p.reviews = Number(p.ratings?.count !== undefined ? p.ratings.count : (p.reviews !== undefined ? p.reviews : 0));
-      const actualPrice = p.salePrice || p.price || 0;
-      p.price = actualPrice;
-      p.salePrice = actualPrice;
-      p.originalPrice = actualPrice;
-      p.discount = '';
-      return p;
-    });
+    const formattedProducts = products.map((prod) => formatCustomerProduct(prod));
 
     if (search && String(search).trim() && (!sort || sort === 'featured' || sort === 'relevance')) {
       const lowerQ = String(search).toLowerCase().trim();
@@ -202,6 +224,27 @@ const getCustomerProducts = async (req, res) => {
       });
     }
 
+    // Fetch active promo coupons for offers showcase
+    const now = new Date();
+    const activeCoupons = await Coupon.find({
+      active: true,
+      $or: [
+        { expiryDate: null },
+        { expiryDate: { $gte: now } },
+      ],
+    }).sort({ updatedAt: -1, createdAt: -1 });
+
+    const formattedCoupons = activeCoupons.map((c) => ({
+      code: c.code,
+      description: c.description || '',
+      discountType: c.discountType,
+      discountValue: c.discountValue,
+      minOrderValue: c.minOrderValue || 0,
+      maxDiscount: c.maxDiscount || 0,
+      expiryDate: c.expiryDate,
+      label: (c.discountType === 'flat' || c.discountType === 'fixed') ? `₹${c.discountValue} OFF` : `${c.discountValue}% OFF`,
+    }));
+
     res.status(200).json({
       success: true,
       count: formattedProducts.length,
@@ -209,6 +252,7 @@ const getCustomerProducts = async (req, res) => {
       page: pageNum,
       pages: Math.ceil(total / limitNum),
       activeCoupon: activeDiscount,
+      activeCoupons: formattedCoupons,
       discountDisplay: activeDiscount?.label || '',
       products: formattedProducts,
     });
@@ -231,17 +275,7 @@ const getFeaturedProducts = async (req, res) => {
 
     const activeDiscount = await getActiveStoreDiscount();
 
-    const formattedProducts = products.map((prod) => {
-      const p = prod.toObject ? prod.toObject() : { ...prod };
-      p.rating = Number(p.rating !== undefined ? p.rating : (p.ratings?.average !== undefined ? p.ratings.average : 5));
-      p.reviews = Number(p.ratings?.count !== undefined ? p.ratings.count : (p.reviews !== undefined ? p.reviews : 0));
-      const actualPrice = p.salePrice || p.price || 0;
-      p.price = actualPrice;
-      p.salePrice = actualPrice;
-      p.originalPrice = actualPrice;
-      p.discount = '';
-      return p;
-    });
+    const formattedProducts = products.map((prod) => formatCustomerProduct(prod));
 
     res.status(200).json({
       success: true,
@@ -294,9 +328,9 @@ const getProductBySlugOrId = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      product,
+      product: formatCustomerProduct(product),
       reviews,
-      relatedProducts,
+      relatedProducts: relatedProducts.map((p) => formatCustomerProduct(p)),
     });
   } catch (error) {
     res.status(500).json({
