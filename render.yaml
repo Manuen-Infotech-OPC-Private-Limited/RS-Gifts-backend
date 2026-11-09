@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: rs-gifts-backend
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: node src/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        value: mongodb+srv://shaikabdul:shaikabdulr503@data-storage.uleb4ax.mongodb.net/RSGIFTS?retryWrites=true&w=majority
+      - key: MONGO_DB_NAME
+        value: RSGIFTS
+      - key: JWT_SECRET
+        value: rs_gifts_super_secret_jwt_key_2026_secure
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: CLOUDINARY_CLOUD_NAME
+        value: dcsfxv6g1
+      - key: CLOUDINARY_API_KEY
+        value: 315689371387632
+      - key: CLOUDINARY_API_SECRET
+        value: XFeOCzG1gNLMGRnMSm8CmRMwElI
