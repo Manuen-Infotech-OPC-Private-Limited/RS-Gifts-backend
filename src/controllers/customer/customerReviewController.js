@@ -1,11 +1,17 @@
+import mongoose from 'mongoose';
 import Review from '../../models/Review.js';
 import Product from '../../models/Product.js';
 
 // Calculate and update product average rating
 const updateProductAverageRating = async (productId) => {
   try {
+    if (!productId) return;
+    const targetId = mongoose.Types.ObjectId.isValid(productId)
+      ? new mongoose.Types.ObjectId(productId)
+      : productId;
+
     const stats = await Review.aggregate([
-      { $match: { product: productId, isApproved: true } },
+      { $match: { product: targetId, isApproved: true } },
       {
         $group: {
           _id: '$product',
@@ -17,17 +23,15 @@ const updateProductAverageRating = async (productId) => {
 
     if (stats.length > 0) {
       const avg = Math.round(stats[0].avgRating * 10) / 10;
-      await Product.findByIdAndUpdate(productId, {
+      await Product.findByIdAndUpdate(targetId, {
         rating: avg,
         'ratings.average': avg,
         'ratings.count': stats[0].count,
       });
     } else {
-      const currentProd = await Product.findById(productId);
-      const fallback = currentProd?.rating !== undefined ? currentProd.rating : 5;
-      await Product.findByIdAndUpdate(productId, {
-        rating: fallback,
-        'ratings.average': fallback,
+      await Product.findByIdAndUpdate(targetId, {
+        rating: 0,
+        'ratings.average': 0,
         'ratings.count': 0,
       });
     }

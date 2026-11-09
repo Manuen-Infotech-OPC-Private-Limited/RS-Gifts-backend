@@ -144,6 +144,10 @@ const productSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
+productSchema.index({ active: 1, featured: 1, createdAt: -1 });
+productSchema.index({ active: 1, category: 1, createdAt: -1 });
+productSchema.index({ active: 1, 'ratings.average': -1 });
+
 productSchema.pre('validate', async function () {
   let digits = String(this.productId || this.sku || '').replace(/\D/g, '');
   if (digits.length > 6) {

@@ -31,8 +31,11 @@ const getActiveStoreDiscount = async () => {
 // Helper to format product with dynamic offer and pricing calculation
 const formatCustomerProduct = (prod) => {
   const p = prod.toObject ? prod.toObject() : { ...prod };
-  p.rating = Number(p.rating !== undefined ? p.rating : (p.ratings?.average !== undefined ? p.ratings.average : 5));
-  p.reviews = Number(p.ratings?.count !== undefined ? p.ratings.count : (p.reviews !== undefined ? p.reviews : 0));
+  const avgRating = Number(p.ratings?.average !== undefined && p.ratings.average !== null ? p.ratings.average : (p.rating !== undefined && p.rating !== null ? p.rating : 0));
+  const reviewCount = Number(p.ratings?.count !== undefined && p.ratings.count !== null ? p.ratings.count : (p.reviews !== undefined && p.reviews !== null ? p.reviews : 0));
+  p.rating = avgRating;
+  p.reviews = reviewCount;
+  p.ratings = { average: avgRating, count: reviewCount };
   
   const regPrice = Number(p.price || 0);
   const rawSale = p.salePrice !== undefined && p.salePrice !== null && p.salePrice !== '' ? Number(p.salePrice) : null;
