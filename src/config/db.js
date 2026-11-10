@@ -26,7 +26,7 @@ if (!process.env.MONGO_URI) {
 }
 
 const connectDB = async () => {
-  const uri = process.env.MONGO_URI || 'mongodb+srv://shaikabdul:shaikabdulr503@data-storage.uleb4ax.mongodb.net/RSGIFTS?retryWrites=true&w=majority';
+  const uri = process.env.MONGO_URI;
 
   if (!uri || uri === 'your_mongodb_connection_string_here') {
     console.error('WARNING: MONGODB CONNECTION STRING MISSING OR UNCONFIGURED!');
