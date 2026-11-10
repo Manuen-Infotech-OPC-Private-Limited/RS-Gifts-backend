@@ -192,12 +192,16 @@ const getCustomerOrderDetails = async (req, res) => {
       });
     }
 
-    // If user is logged in, ensure ownership
-    if (req.user && order.customer && order.customer.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied to this order',
-      });
+    // If order was placed by a registered customer, require that customer's login or email verification
+    if (order.customer) {
+      const isOwner = req.user && (order.customer.toString() === req.user._id.toString() || req.user.role === 'admin');
+      const emailMatches = (req.query.email || '').trim().toLowerCase() === (order.customerInfo?.email || '').toLowerCase().trim();
+      if (!isOwner && !emailMatches) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. Please log in with the registered account or verify email.',
+        });
+      }
     }
 
     res.status(200).json({
@@ -225,11 +229,26 @@ const cancelCustomerOrder = async (req, res) => {
       });
     }
 
-    if (req.user && order.customer && order.customer.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: 'Unauthorized to cancel this order',
-      });
+    // Ensure only the order owner or verified email holder can cancel the order
+    if (order.customer) {
+      const isOwner = req.user && (order.customer.toString() === req.user._id.toString() || req.user.role === 'admin');
+      const emailMatches = (req.body.email || '').trim().toLowerCase() === (order.customerInfo?.email || '').toLowerCase().trim();
+      if (!isOwner && !emailMatches) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. Please log in with the registered account or provide the matching order email to cancel this order.',
+        });
+      }
+    } else {
+      // Guest order - require matching email to cancel
+      const emailMatches = (req.body.email || '').trim().toLowerCase() === (order.customerInfo?.email || '').toLowerCase().trim();
+      const isAdmin = req.user && req.user.role === 'admin';
+      if (!emailMatches && !isAdmin) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. Please provide the matching email address to cancel this guest order.',
+        });
+      }
     }
 
     if (order.orderStatus !== 'Pending' && order.orderStatus !== 'Processing') {
