@@ -26,7 +26,7 @@ if (!process.env.MONGO_URI) {
 }
 
 const connectDB = async () => {
-  const uri = process.env.MONGO_URI;
+  const uri = process.env.MONGO_URI || 'mongodb+srv://shaikabdul:shaikabdulr503@data-storage.uleb4ax.mongodb.net/RSGIFTS?retryWrites=true&w=majority';
 
   if (!uri || uri === 'your_mongodb_connection_string_here') {
     console.error('WARNING: MONGODB CONNECTION STRING MISSING OR UNCONFIGURED!');
@@ -34,6 +34,10 @@ const connectDB = async () => {
   }
 
   try {
+    try {
+      dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+    } catch {}
+
     const conn = await mongoose.connect(uri, {
       dbName: process.env.MONGO_DB_NAME || 'RSGIFTS',
       serverSelectionTimeoutMS: 10000,
