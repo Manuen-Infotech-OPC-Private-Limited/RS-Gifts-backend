@@ -1,5 +1,6 @@
 import User from '../../models/User.js';
 import Order from '../../models/Order.js';
+import { invalidateAllUserSessions } from '../../services/sessionService.js';
 
 // @desc    Get all customers with aggregated spending, profile fields and order counts
 // @route   GET /api/admin/customers
@@ -197,6 +198,11 @@ const toggleCustomerStatus = async (req, res) => {
 
     customer.isActive = !customer.isActive;
     await customer.save();
+
+    // Revoke all active database sessions if user is deactivated
+    if (!customer.isActive) {
+      await invalidateAllUserSessions(customer._id);
+    }
 
     res.status(200).json({
       success: true,

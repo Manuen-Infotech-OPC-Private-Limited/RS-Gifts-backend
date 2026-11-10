@@ -1,6 +1,13 @@
 import bcrypt from 'bcryptjs';
 import User from '../../models/User.js';
 import generateToken from '../../utils/generateToken.js';
+import {
+  createSession,
+  invalidateSession,
+  invalidateAllUserSessions,
+  getUserSessions,
+  revokeSessionById,
+} from '../../services/sessionService.js';
 
 // @desc    Register a new customer account
 // @route   POST /api/customer/auth/register
@@ -64,6 +71,15 @@ const registerCustomer = async (req, res) => {
     });
 
     const token = generateToken(customer._id, 'customer');
+
+    // Register active session in MongoDB
+    await createSession({
+      userId: customer._id,
+      role: 'customer',
+      token,
+      req,
+      expiresInDays: 7,
+    });
 
     res.status(201).json({
       success: true,
@@ -140,6 +156,15 @@ const loginCustomer = async (req, res) => {
     await customer.save({ validateBeforeSave: false });
 
     const token = generateToken(customer._id, customer.role);
+
+    // Register active session in MongoDB
+    await createSession({
+      userId: customer._id,
+      role: customer.role,
+      token,
+      req,
+      expiresInDays: 7,
+    });
 
     res.status(200).json({
       success: true,
@@ -347,6 +372,97 @@ const deleteCustomerAddress = async (req, res) => {
   }
 };
 
+// @desc    Logout customer (Invalidate active server session)
+// @route   POST /api/customer/auth/logout
+// @access  Private (Customer)
+const logoutCustomer = async (req, res) => {
+  try {
+    const token = req.token || (req.headers.authorization ? req.headers.authorization.split(' ')[1] : null);
+    if (token) {
+      await invalidateSession(token);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Logged out successfully from this device',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Logout customer from all active devices
+// @route   POST /api/customer/auth/logout-all
+// @access  Private (Customer)
+const logoutAllCustomerSessions = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+    await invalidateAllUserSessions(userId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Successfully logged out from all active sessions and devices',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Get all active database sessions for customer account
+// @route   GET /api/customer/auth/sessions
+// @access  Private (Customer)
+const getCustomerSessions = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+    const currentToken = req.token || (req.headers.authorization ? req.headers.authorization.split(' ')[1] : null);
+    const sessions = await getUserSessions(userId, currentToken);
+
+    res.status(200).json({
+      success: true,
+      count: sessions.length,
+      sessions,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Revoke specific device session
+// @route   DELETE /api/customer/auth/sessions/:sessionId
+// @access  Private (Customer)
+const revokeCustomerSession = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+    const success = await revokeSessionById(userId, req.params.sessionId);
+
+    if (!success) {
+      return res.status(404).json({
+        success: false,
+        message: 'Session not found or already revoked',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Device session revoked successfully',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 export {
   registerCustomer,
   loginCustomer,
@@ -354,4 +470,8 @@ export {
   updateCustomerProfile,
   addCustomerAddress,
   deleteCustomerAddress,
+  logoutCustomer,
+  logoutAllCustomerSessions,
+  getCustomerSessions,
+  revokeCustomerSession,
 };

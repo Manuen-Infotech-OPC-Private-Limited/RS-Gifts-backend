@@ -1,15 +1,30 @@
 import express from 'express';
 const router = express.Router();
-import { loginAdmin,
+import {
+  loginAdmin,
   getAdminProfile,
   updateAdminProfile,
-  registerInitialAdmin, } from '../../controllers/admin/authController.js';
+  registerInitialAdmin,
+  logoutAdmin,
+  logoutAllAdminSessions,
+  getAdminSessions,
+  revokeAdminSession,
+} from '../../controllers/admin/authController.js';
 import { protect, adminOnly } from '../../middlewares/authMiddleware.js';
 import { adminLoginLimiter } from '../../middlewares/rateLimitMiddleware.js';
 
 router.post('/login', adminLoginLimiter, loginAdmin);
 router.post('/register-initial', registerInitialAdmin);
-router.get('/profile', protect, adminOnly, getAdminProfile);
-router.put('/profile', protect, adminOnly, updateAdminProfile);
+
+// Protected Admin Auth & Session Management Routes
+router.use(protect, adminOnly);
+router.route('/profile')
+  .get(getAdminProfile)
+  .put(updateAdminProfile);
+
+router.post('/logout', logoutAdmin);
+router.post('/logout-all', logoutAllAdminSessions);
+router.get('/sessions', getAdminSessions);
+router.delete('/sessions/:sessionId', revokeAdminSession);
 
 export default router;

@@ -1,6 +1,13 @@
 import bcrypt from 'bcryptjs';
 import User from '../../models/User.js';
 import generateToken from '../../utils/generateToken.js';
+import {
+  createSession,
+  invalidateSession,
+  invalidateAllUserSessions,
+  getUserSessions,
+  revokeSessionById,
+} from '../../services/sessionService.js';
 
 // @desc    Authenticate Admin & Get Token
 // @route   POST /api/admin/auth/login
@@ -54,6 +61,15 @@ const loginAdmin = async (req, res) => {
     await admin.save({ validateBeforeSave: false });
 
     const token = generateToken(admin._id, admin.role);
+
+    // Register active admin session in MongoDB
+    await createSession({
+      userId: admin._id,
+      role: admin.role,
+      token,
+      req,
+      expiresInDays: 7,
+    });
 
     res.status(200).json({
       success: true,
@@ -138,6 +154,10 @@ const updateAdminProfile = async (req, res) => {
       // Hash new password in controller
       const salt = await bcrypt.genSalt(10);
       admin.password = await bcrypt.hash(newPassword, salt);
+
+      // Invalidate other sessions on other devices when password changes
+      const currentToken = req.token || (req.headers.authorization ? req.headers.authorization.split(' ')[1] : null);
+      await invalidateAllUserSessions(admin._id, currentToken);
     }
 
     const updatedAdmin = await admin.save();
@@ -198,6 +218,15 @@ const registerInitialAdmin = async (req, res) => {
 
     const token = generateToken(newAdmin._id, newAdmin.role);
 
+    // Register initial admin session in MongoDB
+    await createSession({
+      userId: newAdmin._id,
+      role: newAdmin.role,
+      token,
+      req,
+      expiresInDays: 7,
+    });
+
     res.status(201).json({
       success: true,
       message: 'Initial administrator account created successfully',
@@ -217,9 +246,104 @@ const registerInitialAdmin = async (req, res) => {
   }
 };
 
+// @desc    Logout admin (Invalidate active server session)
+// @route   POST /api/admin/auth/logout
+// @access  Private (Admin)
+const logoutAdmin = async (req, res) => {
+  try {
+    const token = req.token || (req.headers.authorization ? req.headers.authorization.split(' ')[1] : null);
+    if (token) {
+      await invalidateSession(token);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Admin logged out successfully from this device',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Logout admin from all active sessions
+// @route   POST /api/admin/auth/logout-all
+// @access  Private (Admin)
+const logoutAllAdminSessions = async (req, res) => {
+  try {
+    const adminId = req.user?._id || req.user?.id;
+    await invalidateAllUserSessions(adminId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Successfully logged out from all admin sessions and devices',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Get all active database sessions for current admin
+// @route   GET /api/admin/auth/sessions
+// @access  Private (Admin)
+const getAdminSessions = async (req, res) => {
+  try {
+    const adminId = req.user?._id || req.user?.id;
+    const currentToken = req.token || (req.headers.authorization ? req.headers.authorization.split(' ')[1] : null);
+    const sessions = await getUserSessions(adminId, currentToken);
+
+    res.status(200).json({
+      success: true,
+      count: sessions.length,
+      sessions,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Revoke specific admin session by ID
+// @route   DELETE /api/admin/auth/sessions/:sessionId
+// @access  Private (Admin)
+const revokeAdminSession = async (req, res) => {
+  try {
+    const adminId = req.user?._id || req.user?.id;
+    const success = await revokeSessionById(adminId, req.params.sessionId);
+
+    if (!success) {
+      return res.status(404).json({
+        success: false,
+        message: 'Admin session not found or already revoked',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Admin session revoked successfully',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 export {
   loginAdmin,
   getAdminProfile,
   updateAdminProfile,
   registerInitialAdmin,
+  logoutAdmin,
+  logoutAllAdminSessions,
+  getAdminSessions,
+  revokeAdminSession,
 };

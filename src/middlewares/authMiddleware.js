@@ -1,7 +1,9 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import Session from '../models/Session.js';
+import { createSession, invalidateAllUserSessions } from '../services/sessionService.js';
 
-// Protect routes - Requires valid JWT
+// Protect routes - Requires valid JWT backed by active Database Session
 const protect = async (req, res, next) => {
   let token;
 
@@ -16,6 +18,7 @@ const protect = async (req, res, next) => {
         process.env.JWT_SECRET || 'rs_gifts_default_jwt_secret_change_me'
       );
 
+      // 1. Verify user existence & active status in DB
       const user = await User.findById(decoded.id).select('-password');
 
       if (!user) {
@@ -26,13 +29,43 @@ const protect = async (req, res, next) => {
       }
 
       if (!user.isActive) {
+        await invalidateAllUserSessions(user._id);
         return res.status(403).json({
           success: false,
           message: 'Your account has been deactivated. Please contact support.',
         });
       }
 
+      // 2. Server-side Database Session Tracking Check
+      let session = await Session.findOne({ token, user: user._id });
+
+      if (session) {
+        if (!session.isValid || session.expiresAt <= new Date()) {
+          return res.status(401).json({
+            success: false,
+            message: 'Session has ended or been revoked. Please log in again.',
+          });
+        }
+        // Throttled lastActive update (every 5 minutes)
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+        if (!session.lastActive || session.lastActive < fiveMinutesAgo) {
+          session.lastActive = new Date();
+          await session.save({ validateBeforeSave: false });
+        }
+      } else {
+        // Seamless migration: Auto-enroll existing valid unexpired JWT into database session tracking
+        session = await createSession({
+          userId: user._id,
+          role: user.role,
+          token,
+          req,
+          expiresInDays: 7,
+        });
+      }
+
       req.user = user;
+      req.token = token;
+      req.session = session;
       next();
     } catch (error) {
       console.error('Auth verification error:', error.message);
@@ -85,7 +118,19 @@ const optionalAuth = async (req, res, next) => {
         token,
         process.env.JWT_SECRET || 'rs_gifts_default_jwt_secret_change_me'
       );
-      req.user = await User.findById(decoded.id).select('-password');
+      const user = await User.findById(decoded.id).select('-password');
+      if (user && user.isActive) {
+        const session = await Session.findOne({ token, user: user._id });
+        if (!session || (session.isValid && session.expiresAt > new Date())) {
+          req.user = user;
+          req.token = token;
+          req.session = session;
+        } else {
+          req.user = null;
+        }
+      } else {
+        req.user = null;
+      }
     } catch (e) {
       req.user = null;
     }
