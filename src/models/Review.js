@@ -20,6 +20,7 @@ const reviewSchema = new mongoose.Schema({
     type: String,
     trim: true,
     default: '',
+    select: false, // Security: Never leak customer email in public queries
   },
   rating: {
     type: Number,

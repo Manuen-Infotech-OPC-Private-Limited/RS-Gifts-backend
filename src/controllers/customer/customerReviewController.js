@@ -88,7 +88,14 @@ const createCustomerReview = async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Thank you! Your review has been submitted.',
-      review,
+      review: {
+        _id: review._id,
+        product: review.product,
+        customerName: review.customerName,
+        rating: review.rating,
+        comment: review.comment,
+        createdAt: review.createdAt,
+      },
     });
   } catch (error) {
     res.status(500).json({

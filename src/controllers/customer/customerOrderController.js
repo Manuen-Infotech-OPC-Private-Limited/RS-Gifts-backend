@@ -171,9 +171,40 @@ const getMyOrders = async (req, res) => {
   }
 };
 
+// Helper to mask sensitive address & phone PII for unauthenticated/guest tracking
+const maskOrderPII = (orderDoc) => {
+  const orderObj = orderDoc.toObject ? orderDoc.toObject() : { ...orderDoc };
+  if (orderObj.shippingAddress) {
+    orderObj.shippingAddress = {
+      recipientName: orderObj.shippingAddress.recipientName || '',
+      city: orderObj.shippingAddress.city || '',
+      state: orderObj.shippingAddress.state || '',
+      postalCode: orderObj.shippingAddress.postalCode || '',
+      country: orderObj.shippingAddress.country || 'India',
+      addressLine1: '*** [Protected for privacy]',
+      addressLine2: '',
+      phone: orderObj.shippingAddress.phone
+        ? orderObj.shippingAddress.phone.replace(/.(?=.{4})/g, '*')
+        : '',
+    };
+  }
+  if (orderObj.customerInfo) {
+    orderObj.customerInfo = {
+      name: orderObj.customerInfo.name || '',
+      email: orderObj.customerInfo.email
+        ? orderObj.customerInfo.email.replace(/(.{2})(.*)(?=@)/, (_, a, b) => a + '*'.repeat(b.length))
+        : '',
+      phone: orderObj.customerInfo.phone
+        ? orderObj.customerInfo.phone.replace(/.(?=.{4})/g, '*')
+        : '',
+    };
+  }
+  return orderObj;
+};
+
 // @desc    Get order details by orderNumber or ID
 // @route   GET /api/customer/orders/:idOrNumber
-// @access  Public (Can verify with email) or Customer
+// @access  Protected (Customer owner / Admin) or Verified with matching email/phone
 const getCustomerOrderDetails = async (req, res) => {
   try {
     const { idOrNumber } = req.params;
@@ -192,21 +223,84 @@ const getCustomerOrderDetails = async (req, res) => {
       });
     }
 
-    // If order was placed by a registered customer, require that customer's login or email verification
+    const isOwner = req.user && order.customer && order.customer.toString() === req.user._id.toString();
+    const isAdmin = req.user && req.user.role === 'admin';
+
+    // 1. Registered Customer Order - Require customer login or verified email
     if (order.customer) {
-      const isOwner = req.user && (order.customer.toString() === req.user._id.toString() || req.user.role === 'admin');
-      const emailMatches = (req.query.email || '').trim().toLowerCase() === (order.customerInfo?.email || '').toLowerCase().trim();
-      if (!isOwner && !emailMatches) {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied. Please log in with the registered account or verify email.',
+      if (isOwner || isAdmin) {
+        return res.status(200).json({
+          success: true,
+          order,
         });
       }
+
+      // If user is logged in as another user, forbid immediately
+      if (req.user) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. You do not have permission to view this order.',
+        });
+      }
+
+      // If unauthenticated, check if matching email query parameter was provided
+      const verifyEmail = (req.query.email || req.headers['x-order-email'] || '').trim().toLowerCase();
+      const orderEmail = (order.customerInfo?.email || '').trim().toLowerCase();
+
+      if (!verifyEmail) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required. Please log in with the registered account to view this order.',
+        });
+      }
+
+      if (verifyEmail !== orderEmail) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. Email address does not match this order.',
+        });
+      }
+
+      // Matching email provided by unauthenticated tracker: return order with masked PII
+      return res.status(200).json({
+        success: true,
+        order: maskOrderPII(order),
+      });
     }
 
-    res.status(200).json({
+    // 2. Guest Order - Require verification via email or phone
+    if (isAdmin) {
+      return res.status(200).json({
+        success: true,
+        order,
+      });
+    }
+
+    const verifyEmail = (req.query.email || req.headers['x-order-email'] || '').trim().toLowerCase();
+    const verifyPhone = (req.query.phone || '').trim().replace(/[^0-9]/g, '');
+    const orderEmail = (order.customerInfo?.email || '').trim().toLowerCase();
+    const orderPhone = (order.customerInfo?.phone || order.shippingAddress?.phone || '').trim().replace(/[^0-9]/g, '');
+
+    if (!verifyEmail && !verifyPhone) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Verification required: please provide the email address or phone number used during checkout to view this order.',
+      });
+    }
+
+    const emailMatches = verifyEmail && orderEmail && verifyEmail === orderEmail;
+    const phoneMatches = verifyPhone && orderPhone && (orderPhone.endsWith(verifyPhone) || verifyPhone.endsWith(orderPhone));
+
+    if (!emailMatches && !phoneMatches) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. The provided email or phone does not match this order.',
+      });
+    }
+
+    return res.status(200).json({
       success: true,
-      order,
+      order: maskOrderPII(order),
     });
   } catch (error) {
     res.status(500).json({
@@ -218,7 +312,7 @@ const getCustomerOrderDetails = async (req, res) => {
 
 // @desc    Cancel order (if still Pending or Processing)
 // @route   POST /api/customer/orders/:id/cancel
-// @access  Private (Customer) or Verified email
+// @access  Private (Customer owner / Admin) or Verified email
 const cancelCustomerOrder = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
@@ -229,24 +323,24 @@ const cancelCustomerOrder = async (req, res) => {
       });
     }
 
-    // Ensure only the order owner or verified email holder can cancel the order
+    const isOwner = req.user && order.customer && order.customer.toString() === req.user._id.toString();
+    const isAdmin = req.user && req.user.role === 'admin';
+    const verifyEmail = (req.body.email || req.query.email || req.headers['x-order-email'] || '').trim().toLowerCase();
+    const orderEmail = (order.customerInfo?.email || '').trim().toLowerCase();
+    const emailMatches = verifyEmail && orderEmail && verifyEmail === orderEmail;
+
     if (order.customer) {
-      const isOwner = req.user && (order.customer.toString() === req.user._id.toString() || req.user.role === 'admin');
-      const emailMatches = (req.body.email || '').trim().toLowerCase() === (order.customerInfo?.email || '').toLowerCase().trim();
-      if (!isOwner && !emailMatches) {
+      if (!isOwner && !isAdmin && !emailMatches) {
         return res.status(403).json({
           success: false,
-          message: 'Access denied. Please log in with the registered account or provide the matching order email to cancel this order.',
+          message: 'Access denied. You must be logged in with the registered account or provide the verified order email to cancel this order.',
         });
       }
     } else {
-      // Guest order - require matching email to cancel
-      const emailMatches = (req.body.email || '').trim().toLowerCase() === (order.customerInfo?.email || '').toLowerCase().trim();
-      const isAdmin = req.user && req.user.role === 'admin';
-      if (!emailMatches && !isAdmin) {
+      if (!isAdmin && !emailMatches) {
         return res.status(403).json({
           success: false,
-          message: 'Access denied. Please provide the matching email address to cancel this guest order.',
+          message: 'Access denied. Please provide the matching email address used during checkout to cancel this guest order.',
         });
       }
     }

@@ -317,8 +317,9 @@ const getProductBySlugOrId = async (req, res) => {
       });
     }
 
-    // Fetch approved customer reviews
+    // Fetch approved customer reviews (strictly omitting customerEmail for privacy)
     const reviews = await Review.find({ product: product._id, isApproved: true })
+      .select('-customerEmail')
       .sort({ createdAt: -1 })
       .limit(20);
 
