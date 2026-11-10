@@ -52,3 +52,4 @@ sessionSchema.index({ token: 1, user: 1, isValid: 1 });
 
 const Session = mongoose.model('Session', sessionSchema);
 export default Session;
+
