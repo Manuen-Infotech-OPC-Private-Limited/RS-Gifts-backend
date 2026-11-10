@@ -106,7 +106,9 @@ const getProductReviews = async (req, res) => {
     const reviews = await Review.find({
       product: req.params.productId,
       isApproved: true,
-    }).sort({ createdAt: -1 });
+    })
+      .select('-customerEmail')
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
