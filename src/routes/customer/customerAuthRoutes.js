@@ -7,9 +7,10 @@ import { registerCustomer,
   addCustomerAddress,
   deleteCustomerAddress, } from '../../controllers/customer/customerAuthController.js';
 import { protect } from '../../middlewares/authMiddleware.js';
+import { customerLoginLimiter, registerLimiter } from '../../middlewares/rateLimitMiddleware.js';
 
-router.post('/register', registerCustomer);
-router.post('/login', loginCustomer);
+router.post('/register', registerLimiter, registerCustomer);
+router.post('/login', customerLoginLimiter, loginCustomer);
 
 // Authenticated customer profile & address routes
 router.use(protect);

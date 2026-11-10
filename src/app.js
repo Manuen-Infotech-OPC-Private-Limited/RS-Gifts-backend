@@ -12,6 +12,9 @@ import { notFound, errorHandler } from './middlewares/errorMiddleware.js';
 
 const app = express();
 
+// Trust reverse proxy headers (Render, Cloudflare) for accurate client IP identification in rate limiting
+app.set('trust proxy', 1);
+
 // Security Headers (Configured to allow cross-origin static media loading)
 app.use(
   helmet({

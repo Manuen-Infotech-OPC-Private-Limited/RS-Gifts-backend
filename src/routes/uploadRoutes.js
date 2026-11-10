@@ -4,11 +4,13 @@ import dotenv from 'dotenv';
 import upload from '../middlewares/uploadMiddleware.js';
 import { uploadToCloudinary } from '../services/cloudinaryService.js';
 import Setting from '../models/Setting.js';
+import { protect, adminOnly } from '../middlewares/authMiddleware.js';
+import { uploadLimiter } from '../middlewares/rateLimitMiddleware.js';
 
 // @desc    Upload a single image (Hybrid: Cloudinary or Local)
 // @route   POST /api/upload
-// @access  Public / Admin
-router.post('/', upload.single('image'), async (req, res) => {
+// @access  Protected (Customer / Admin)
+router.post('/', protect, uploadLimiter, upload.single('image'), async (req, res) => {
   try {
     dotenv.config();
     if (!req.file) {
@@ -62,8 +64,8 @@ router.post('/', upload.single('image'), async (req, res) => {
 
 // @desc    Upload multiple images (Gallery)
 // @route   POST /api/upload/multiple
-// @access  Public / Admin
-router.post('/multiple', upload.array('images', 8), async (req, res) => {
+// @access  Protected (Admin only)
+router.post('/multiple', protect, adminOnly, uploadLimiter, upload.array('images', 8), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
