@@ -39,35 +39,21 @@ const getCustomers = async (req, res) => {
         const latestOrder = customerOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
         const fullName = c.name || `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'Customer';
 
-        // Gather all addresses (from user profile + shipping addresses used in orders)
+        // Real customer addresses from registered profile
         const combinedAddresses = [...(c.addresses || [])];
-        customerOrders.forEach((ord) => {
-          const s = ord.shippingAddress;
-          if (s && (s.addressLine1 || s.city)) {
-            const isDuplicate = combinedAddresses.some((a) => {
-              const aLine = (a.addressLine1 || '').trim().toLowerCase();
-              const sLine = (s.addressLine1 || '').trim().toLowerCase();
-              const aPin = String(a.postalCode || '').trim();
-              const sPin = String(s.postalCode || '').trim();
-              return aLine === sLine || (aLine && sLine && aLine.includes(sLine) && aPin === sPin);
-            });
-            if (!isDuplicate) {
-              combinedAddresses.push({
-                _id: ord._id,
-                recipientName: s.recipientName || fullName,
-                phone: s.phone || c.phone || '',
-                addressLine1: s.addressLine1,
-                addressLine2: s.addressLine2 || '',
-                city: s.city,
-                state: s.state,
-                postalCode: s.postalCode,
-                country: s.country || 'India',
-                isDefault: combinedAddresses.length === 0,
-                source: `Order #${ord.orderNumber || ord._id.toString().slice(-6)}`,
-              });
-            }
-          }
-        });
+        if (combinedAddresses.length === 0 && c.address && c.address !== '—' && c.address !== 'Not provided') {
+          combinedAddresses.push({
+            _id: c._id,
+            recipientName: fullName,
+            phone: c.phone || '',
+            addressLine1: c.address,
+            city: '',
+            state: '',
+            postalCode: '',
+            country: 'India',
+            isDefault: true,
+          });
+        }
 
         // Determine formatted primary location/address
         let primaryAddress = 'Not provided';
@@ -76,9 +62,6 @@ const getCustomers = async (req, res) => {
         } else if (combinedAddresses.length > 0) {
           const def = combinedAddresses.find((a) => a.isDefault) || combinedAddresses[0];
           primaryAddress = [def.addressLine1, def.addressLine2, def.city, def.state, def.postalCode].filter(Boolean).join(', ');
-        } else if (latestOrder && latestOrder.shippingAddress) {
-          const s = latestOrder.shippingAddress;
-          primaryAddress = [s.addressLine1, s.addressLine2, s.city, s.state, s.postalCode].filter(Boolean).join(', ');
         }
 
         return {
@@ -144,35 +127,21 @@ const getCustomerById = async (req, res) => {
 
     const fullName = customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'Customer';
 
-    // Gather all addresses (from user profile + shipping addresses used in orders)
+    // Real customer addresses from registered profile
     const combinedAddresses = [...(customer.addresses || [])];
-    orders.forEach((ord) => {
-      const s = ord.shippingAddress;
-      if (s && (s.addressLine1 || s.city)) {
-        const isDuplicate = combinedAddresses.some((a) => {
-          const aLine = (a.addressLine1 || '').trim().toLowerCase();
-          const sLine = (s.addressLine1 || '').trim().toLowerCase();
-          const aPin = String(a.postalCode || '').trim();
-          const sPin = String(s.postalCode || '').trim();
-          return aLine === sLine || (aLine && sLine && aLine.includes(sLine) && aPin === sPin);
-        });
-        if (!isDuplicate) {
-          combinedAddresses.push({
-            _id: ord._id,
-            recipientName: s.recipientName || fullName,
-            phone: s.phone || customer.phone || '',
-            addressLine1: s.addressLine1,
-            addressLine2: s.addressLine2 || '',
-            city: s.city,
-            state: s.state,
-            postalCode: s.postalCode,
-            country: s.country || 'India',
-            isDefault: combinedAddresses.length === 0,
-            source: `Order #${ord.orderNumber || ord._id.toString().slice(-6)}`,
-          });
-        }
-      }
-    });
+    if (combinedAddresses.length === 0 && customer.address && customer.address !== '—' && customer.address !== 'Not provided') {
+      combinedAddresses.push({
+        _id: customer._id,
+        recipientName: fullName,
+        phone: customer.phone || '',
+        addressLine1: customer.address,
+        city: '',
+        state: '',
+        postalCode: '',
+        country: 'India',
+        isDefault: true,
+      });
+    }
 
     let primaryAddress = 'Not provided';
     if (customer.address && customer.address !== '—' && customer.address !== 'Not provided') {
@@ -180,9 +149,6 @@ const getCustomerById = async (req, res) => {
     } else if (combinedAddresses.length > 0) {
       const def = combinedAddresses.find((a) => a.isDefault) || combinedAddresses[0];
       primaryAddress = [def.addressLine1, def.addressLine2, def.city, def.state, def.postalCode].filter(Boolean).join(', ');
-    } else if (orders[0]?.shippingAddress) {
-      const s = orders[0].shippingAddress;
-      primaryAddress = [s.addressLine1, s.addressLine2, s.city, s.state, s.postalCode].filter(Boolean).join(', ');
     }
 
     res.status(200).json({
