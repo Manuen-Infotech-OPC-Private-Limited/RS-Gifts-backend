@@ -7,10 +7,13 @@ const sessionSchema = new mongoose.Schema({
     required: true,
     index: true,
   },
+  tokenHash: {
+    type: String,
+    index: true,
+  },
   token: {
     type: String,
-    required: true,
-    index: true,
+    select: false, // Prevents raw token exposure in default queries
   },
   role: {
     type: String,
@@ -47,7 +50,8 @@ const sessionSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-// Compound index for high performance token lookup
+// Compound indexes for high performance token lookup and session validation
+sessionSchema.index({ tokenHash: 1, user: 1, isValid: 1 });
 sessionSchema.index({ token: 1, user: 1, isValid: 1 });
 
 const Session = mongoose.model('Session', sessionSchema);

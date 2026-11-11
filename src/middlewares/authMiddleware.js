@@ -1,7 +1,8 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import Session from '../models/Session.js';
-import { createSession, invalidateAllUserSessions } from '../services/sessionService.js';
+import { createSession, invalidateAllUserSessions, hashToken } from '../services/sessionService.js';
+import { getJwtSecret } from '../config/jwtConfig.js';
 
 // Protect routes - Requires valid JWT backed by active Database Session
 const protect = async (req, res, next) => {
@@ -13,10 +14,7 @@ const protect = async (req, res, next) => {
   ) {
     try {
       token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET || 'rs_gifts_default_jwt_secret_change_me'
-      );
+      const decoded = jwt.verify(token, getJwtSecret());
 
       // 1. Verify user existence & active status in DB
       const user = await User.findById(decoded.id).select('-password');
@@ -36,8 +34,12 @@ const protect = async (req, res, next) => {
         });
       }
 
-      // 2. Server-side Database Session Tracking Check
-      let session = await Session.findOne({ token, user: user._id });
+      // 2. Server-side Database Session Tracking Check (Supports both SHA-256 hashed and legacy tokens)
+      const tokenHash = hashToken(token);
+      let session = await Session.findOne({
+        $or: [{ tokenHash }, { token }],
+        user: user._id,
+      });
 
       if (session) {
         if (!session.isValid || session.expiresAt <= new Date()) {
@@ -46,6 +48,13 @@ const protect = async (req, res, next) => {
             message: 'Session has ended or been revoked. Please log in again.',
           });
         }
+
+        // Auto-upgrade legacy session record to hashed storage
+        if (!session.tokenHash) {
+          session.tokenHash = tokenHash;
+          session.token = undefined;
+        }
+
         // Throttled lastActive update (every 5 minutes)
         const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
         if (!session.lastActive || session.lastActive < fiveMinutesAgo) {
@@ -114,13 +123,14 @@ const optionalAuth = async (req, res, next) => {
   ) {
     try {
       const token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET || 'rs_gifts_default_jwt_secret_change_me'
-      );
+      const decoded = jwt.verify(token, getJwtSecret());
       const user = await User.findById(decoded.id).select('-password');
       if (user && user.isActive) {
-        const session = await Session.findOne({ token, user: user._id });
+        const tokenHash = hashToken(token);
+        const session = await Session.findOne({
+          $or: [{ tokenHash }, { token }],
+          user: user._id,
+        });
         if (!session || (session.isValid && session.expiresAt > new Date())) {
           req.user = user;
           req.token = token;

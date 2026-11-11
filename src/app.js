@@ -22,22 +22,36 @@ app.use(
   })
 );
 
-// CORS configuration (Supporting Admin panel at :3000, Storefront at :5173, etc.)
-const allowedOrigins = [
-  process.env.CLIENT_ADMIN_URL || 'http://localhost:3000',
-  process.env.CLIENT_STOREFRONT_URL || 'http://localhost:5173',
+// CORS configuration (Supporting Admin panel, Customer Storefront, and GitHub Pages production deployments)
+const configuredOrigins = [
+  process.env.CLIENT_ADMIN_URL,
+  process.env.CLIENT_STOREFRONT_URL,
+  'https://manuen-infotech-opc-private-limited.github.io',
+  'http://localhost:3000',
   'http://localhost:3001',
+  'http://localhost:5173',
   'http://localhost:5174',
-];
+  'http://localhost:5000',
+].filter(Boolean);
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (e.g. mobile apps, curl, Postman)
-      if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:')) {
+      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      const isConfigured = configuredOrigins.includes(origin);
+      const isLocalDev = origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:');
+      const isGithubPages = origin.endsWith('.github.io');
+
+      if (isConfigured || isLocalDev || isGithubPages) {
+        callback(null, true);
+      } else if (process.env.NODE_ENV !== 'production') {
         callback(null, true);
       } else {
-        callback(null, true); // Permissive in development
+        callback(new Error(`Blocked by CORS policy: Origin ${origin} is not allowed access`), false);
       }
     },
     credentials: true,

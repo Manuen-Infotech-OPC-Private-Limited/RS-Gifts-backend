@@ -1,4 +1,11 @@
+import crypto from 'crypto';
 import Session from '../models/Session.js';
+
+// Cryptographically secure one-way hash for session tokens to avoid storing raw JWTs
+export const hashToken = (token) => {
+  if (!token) return '';
+  return crypto.createHash('sha256').update(String(token)).digest('hex');
+};
 
 // Parse user agent to extract clean device & browser description
 const parseUserAgent = (uaString = '') => {
@@ -41,11 +48,12 @@ export const createSession = async ({ userId, role, token, req, expiresInDays = 
     const ipAddress = getClientIp(req);
     const device = parseUserAgent(userAgent);
     const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
+    const tokenHash = hashToken(token);
 
     const session = await Session.create({
       user: userId,
       role: role || 'customer',
-      token,
+      tokenHash,
       device,
       ipAddress,
       userAgent,
@@ -61,19 +69,26 @@ export const createSession = async ({ userId, role, token, req, expiresInDays = 
   }
 };
 
-// Verify active session in MongoDB
+// Verify active session in MongoDB (Supports both hashed and legacy unhashed tokens)
 export const verifySession = async ({ token, userId }) => {
   try {
     if (!token || !userId) return null;
+    const tokenHash = hashToken(token);
 
     const session = await Session.findOne({
-      token,
+      $or: [{ tokenHash }, { token }],
       user: userId,
       isValid: true,
       expiresAt: { $gt: new Date() },
     });
 
     if (session) {
+      // Auto-migrate legacy sessions to tokenHash
+      if (!session.tokenHash) {
+        session.tokenHash = tokenHash;
+        session.token = undefined;
+      }
+
       // Throttle lastActive updates (only update if lastActive is older than 5 minutes)
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
       if (!session.lastActive || session.lastActive < fiveMinutesAgo) {
@@ -93,8 +108,9 @@ export const verifySession = async ({ token, userId }) => {
 export const invalidateSession = async (token) => {
   try {
     if (!token) return false;
+    const tokenHash = hashToken(token);
     await Session.findOneAndUpdate(
-      { token },
+      { $or: [{ tokenHash }, { token }] },
       { isValid: false, lastActive: new Date() }
     );
     return true;
@@ -110,6 +126,8 @@ export const invalidateAllUserSessions = async (userId, exceptToken = null) => {
     if (!userId) return false;
     const filter = { user: userId, isValid: true };
     if (exceptToken) {
+      const exceptHash = hashToken(exceptToken);
+      filter.tokenHash = { $ne: exceptHash };
       filter.token = { $ne: exceptToken };
     }
 
@@ -127,6 +145,7 @@ export const invalidateAllUserSessions = async (userId, exceptToken = null) => {
 // Get list of active sessions for user account
 export const getUserSessions = async (userId, currentToken = null) => {
   try {
+    const currentHash = currentToken ? hashToken(currentToken) : null;
     const sessions = await Session.find({
       user: userId,
       isValid: true,
@@ -142,7 +161,7 @@ export const getUserSessions = async (userId, currentToken = null) => {
       ipAddress: s.ipAddress ? s.ipAddress.replace(/(\d+)\.(\d+)\.(\d+)\.(\d+)/, '$1.$2.***.***') : 'Unknown',
       lastActive: s.lastActive || s.updatedAt,
       createdAt: s.createdAt,
-      isCurrent: currentToken ? s.token === currentToken : false,
+      isCurrent: currentHash ? (s.tokenHash === currentHash || s.token === currentToken) : false,
     }));
   } catch (error) {
     console.error('Get user sessions DB error:', error.message);

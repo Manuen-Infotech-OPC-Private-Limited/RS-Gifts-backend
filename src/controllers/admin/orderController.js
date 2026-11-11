@@ -38,12 +38,13 @@ const getOrders = async (req, res) => {
       filter.paymentStatus = paymentStatus;
     }
 
-    if (search) {
+    if (search && String(search).trim()) {
+      const safeSearch = String(search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       filter.$or = [
-        { orderNumber: { $regex: search, $options: 'i' } },
-        { 'customerInfo.name': { $regex: search, $options: 'i' } },
-        { 'customerInfo.email': { $regex: search, $options: 'i' } },
-        { 'customerInfo.phone': { $regex: search, $options: 'i' } },
+        { orderNumber: { $regex: safeSearch, $options: 'i' } },
+        { 'customerInfo.name': { $regex: safeSearch, $options: 'i' } },
+        { 'customerInfo.email': { $regex: safeSearch, $options: 'i' } },
+        { 'customerInfo.phone': { $regex: safeSearch, $options: 'i' } },
       ];
     }
 
