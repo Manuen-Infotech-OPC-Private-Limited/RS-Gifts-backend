@@ -17,3 +17,4 @@ export const getJwtSecret = () => {
 };
 
 export default getJwtSecret;
+

@@ -41,8 +41,9 @@ router.post('/', protect, uploadLimiter, upload.single('image'), async (req, res
     }
 
     // Return static server URL
-    const host = req.get('host');
-    const protocol = req.protocol;
+    const rawHost = req.get('host') || 'rs-gifts-backend.onrender.com';
+    const host = rawHost.includes('localhost') ? rawHost : 'rs-gifts-backend.onrender.com';
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
     const fileUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
 
     res.status(200).json({
@@ -74,8 +75,9 @@ router.post('/multiple', protect, adminOnly, uploadLimiter, upload.array('images
       });
     }
 
-    const host = req.get('host');
-    const protocol = req.protocol;
+    const rawHost = req.get('host') || 'rs-gifts-backend.onrender.com';
+    const host = rawHost.includes('localhost') ? rawHost : 'rs-gifts-backend.onrender.com';
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
 
     const urls = req.files.map((file) => `${protocol}://${host}/uploads/${file.filename}`);
 

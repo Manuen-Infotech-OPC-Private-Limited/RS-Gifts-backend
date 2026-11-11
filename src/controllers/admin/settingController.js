@@ -1,4 +1,5 @@
 import Setting from '../../models/Setting.js';
+import { normalizeLogoUrl } from '../../utils/urlHelper.js';
 
 // @desc    Get store settings
 // @route   GET /api/admin/settings
@@ -10,9 +11,14 @@ const getSettings = async (req, res) => {
       settings = await Setting.create({});
     }
 
+    const settingsData = settings.toObject ? settings.toObject() : { ...(settings._doc || settings) };
+    if (settingsData.storeLogo) {
+      settingsData.storeLogo = normalizeLogoUrl(settingsData.storeLogo, req);
+    }
+
     res.status(200).json({
       success: true,
-      settings,
+      settings: settingsData,
     });
   } catch (error) {
     res.status(500).json({
@@ -58,7 +64,13 @@ const updateSettings = async (req, res) => {
       pinterestUrl,
     } = req.body;
 
-    if (storeLogo !== undefined) settings.storeLogo = storeLogo;
+    if (storeLogo !== undefined) {
+      let cleanLogo = typeof storeLogo === 'string' ? storeLogo.trim() : '';
+      if (cleanLogo.startsWith('http://') && !cleanLogo.includes('localhost')) {
+        cleanLogo = cleanLogo.replace(/^http:\/\//i, 'https://');
+      }
+      settings.storeLogo = cleanLogo;
+    }
     if (storeName !== undefined) settings.storeName = storeName;
     if (contactPhone !== undefined) settings.contactPhone = contactPhone;
     if (altContactPhone !== undefined) settings.altContactPhone = altContactPhone;
@@ -83,11 +95,15 @@ const updateSettings = async (req, res) => {
     if (pinterestUrl !== undefined) settings.pinterestUrl = pinterestUrl.trim();
 
     const saved = await settings.save();
+    const returnData = saved.toObject ? saved.toObject() : { ...(saved._doc || saved) };
+    if (returnData.storeLogo) {
+      returnData.storeLogo = normalizeLogoUrl(returnData.storeLogo, req);
+    }
 
     res.status(200).json({
       success: true,
       message: 'Store settings saved successfully',
-      settings: saved,
+      settings: returnData,
     });
   } catch (error) {
     res.status(500).json({

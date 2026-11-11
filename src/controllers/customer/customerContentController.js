@@ -2,6 +2,7 @@ import Banner from '../../models/Banner.js';
 import Category from '../../models/Category.js';
 import Occasion from '../../models/Occasion.js';
 import Setting from '../../models/Setting.js';
+import { normalizeLogoUrl } from '../../utils/urlHelper.js';
 
 // @desc    Get active promotional banners
 // @route   GET /api/customer/content/banners
@@ -73,7 +74,7 @@ const getPublicSettings = async (req, res) => {
     res.status(200).json({
       success: true,
       settings: {
-        storeLogo: settings.storeLogo || '',
+        storeLogo: normalizeLogoUrl(settings.storeLogo, req),
         storeName: settings.storeName || 'RS GIFTS',
         contactPhone: settings.contactPhone || '',
         altContactPhone: settings.altContactPhone || '',
