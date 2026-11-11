@@ -40,3 +40,4 @@ export const normalizeLogoUrl = (logo, req) => {
 };
 
 export default normalizeLogoUrl;
+
