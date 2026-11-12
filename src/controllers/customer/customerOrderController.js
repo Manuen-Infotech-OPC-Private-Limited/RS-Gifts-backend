@@ -118,7 +118,8 @@ const createCustomerOrder = async (req, res) => {
             state: shippingAddress.state.trim(),
             postalCode: shippingAddress.postalCode.trim(),
             country: shippingAddress.country || 'India',
-            isDefault: userDoc.addresses.length === 0,
+            tag: shippingAddress.tag || shippingAddress.addressType || 'Home',
+            isDefault: false,
           });
         }
 

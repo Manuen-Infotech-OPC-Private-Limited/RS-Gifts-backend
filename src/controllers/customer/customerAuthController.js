@@ -51,7 +51,8 @@ const registerCustomer = async (req, res) => {
         state: 'Telangana',
         postalCode: '500001',
         country: 'India',
-        isDefault: true,
+        tag: 'Home',
+        isDefault: false,
       });
     }
 
@@ -329,14 +330,6 @@ const addCustomerAddress = async (req, res) => {
       customer.addresses = [];
     }
 
-    const shouldBeDefault = customer.addresses.length === 0 ? true : Boolean(isDefault);
-
-    if (shouldBeDefault) {
-      customer.addresses.forEach((addr) => {
-        addr.isDefault = false;
-      });
-    }
-
     const resolvedTag = tag || addressType || 'Home';
 
     customer.addresses.push({
@@ -349,11 +342,11 @@ const addCustomerAddress = async (req, res) => {
       postalCode,
       country: country || 'India',
       tag: resolvedTag,
-      isDefault: shouldBeDefault,
+      isDefault: false,
     });
 
     const fullAddr = [addressLine1, addressLine2, city, state, postalCode].filter(Boolean).join(', ');
-    if (!customer.address || customer.address === '—' || customer.address === 'Not provided' || shouldBeDefault) {
+    if (!customer.address || customer.address === '—' || customer.address === 'Not provided') {
       customer.address = fullAddr;
     }
 
@@ -502,12 +495,11 @@ const deleteCustomerAddress = async (req, res) => {
       (a) => a._id.toString() !== req.params.addressId
     );
 
-    // If default address was deleted and there are remaining addresses, set the first one as default
-    const hasDefault = customer.addresses.some((a) => a.isDefault);
-    if (!hasDefault && customer.addresses.length > 0) {
-      customer.addresses[0].isDefault = true;
-      const def = customer.addresses[0];
-      customer.address = [def.addressLine1, def.addressLine2, def.city, def.state, def.postalCode].filter(Boolean).join(', ');
+    if (customer.addresses.length > 0) {
+      const first = customer.addresses[0];
+      customer.address = [first.addressLine1, first.addressLine2, first.city, first.state, first.postalCode].filter(Boolean).join(', ');
+    } else {
+      customer.address = '';
     }
 
     await customer.save();
