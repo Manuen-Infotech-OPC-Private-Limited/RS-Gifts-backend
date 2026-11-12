@@ -298,7 +298,19 @@ const updateCustomerProfile = async (req, res) => {
 // @access  Private (Customer)
 const addCustomerAddress = async (req, res) => {
   try {
-    const { recipientName, phone, addressLine1, addressLine2, city, state, postalCode, country, isDefault } = req.body;
+    const {
+      recipientName,
+      phone,
+      addressLine1,
+      addressLine2,
+      city,
+      state,
+      postalCode,
+      country,
+      tag,
+      addressType,
+      isDefault,
+    } = req.body;
 
     if (!recipientName || !phone || !addressLine1 || !city || !state || !postalCode) {
       return res.status(400).json({
@@ -307,13 +319,25 @@ const addCustomerAddress = async (req, res) => {
       });
     }
 
-    const customer = await User.findById(req.user.id);
+    const userId = req.user?._id || req.user?.id || req.user;
+    const customer = await User.findById(userId);
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'Customer not found' });
+    }
 
-    if (isDefault) {
+    if (!Array.isArray(customer.addresses)) {
+      customer.addresses = [];
+    }
+
+    const shouldBeDefault = customer.addresses.length === 0 ? true : Boolean(isDefault);
+
+    if (shouldBeDefault) {
       customer.addresses.forEach((addr) => {
         addr.isDefault = false;
       });
     }
+
+    const resolvedTag = tag || addressType || 'Home';
 
     customer.addresses.push({
       recipientName,
@@ -324,11 +348,12 @@ const addCustomerAddress = async (req, res) => {
       state,
       postalCode,
       country: country || 'India',
-      isDefault: customer.addresses.length === 0 ? true : Boolean(isDefault),
+      tag: resolvedTag,
+      isDefault: shouldBeDefault,
     });
 
     const fullAddr = [addressLine1, addressLine2, city, state, postalCode].filter(Boolean).join(', ');
-    if (!customer.address || customer.address === '—' || customer.address === 'Not provided' || isDefault) {
+    if (!customer.address || customer.address === '—' || customer.address === 'Not provided' || shouldBeDefault) {
       customer.address = fullAddr;
     }
 
@@ -347,15 +372,143 @@ const addCustomerAddress = async (req, res) => {
   }
 };
 
+// @desc    Update shipping address
+// @route   PUT /api/customer/auth/addresses/:addressId
+// @access  Private (Customer)
+const updateCustomerAddress = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id || req.user;
+    const customer = await User.findById(userId);
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'Customer not found' });
+    }
+
+    const { addressId } = req.params;
+    const addr = customer.addresses.id(addressId) || customer.addresses.find((a) => a._id?.toString() === addressId);
+
+    if (!addr) {
+      return res.status(404).json({
+        success: false,
+        message: 'Address not found',
+      });
+    }
+
+    const {
+      recipientName,
+      phone,
+      addressLine1,
+      addressLine2,
+      city,
+      state,
+      postalCode,
+      country,
+      tag,
+      addressType,
+      isDefault,
+    } = req.body;
+
+    if (recipientName !== undefined) addr.recipientName = recipientName;
+    if (phone !== undefined) addr.phone = phone;
+    if (addressLine1 !== undefined) addr.addressLine1 = addressLine1;
+    if (addressLine2 !== undefined) addr.addressLine2 = addressLine2;
+    if (city !== undefined) addr.city = city;
+    if (state !== undefined) addr.state = state;
+    if (postalCode !== undefined) addr.postalCode = postalCode;
+    if (country !== undefined) addr.country = country;
+    if (tag !== undefined || addressType !== undefined) {
+      addr.tag = tag || addressType || addr.tag || 'Home';
+    }
+
+    if (isDefault !== undefined && isDefault) {
+      customer.addresses.forEach((a) => {
+        a.isDefault = a._id.toString() === addr._id.toString();
+      });
+      const fullAddr = [addr.addressLine1, addr.addressLine2, addr.city, addr.state, addr.postalCode].filter(Boolean).join(', ');
+      customer.address = fullAddr;
+    } else if (isDefault !== undefined && !isDefault) {
+      addr.isDefault = false;
+    }
+
+    await customer.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Address updated successfully',
+      addresses: customer.addresses,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Set default shipping address
+// @route   PUT /api/customer/auth/addresses/:addressId/default
+// @access  Private (Customer)
+const setDefaultCustomerAddress = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id || req.user;
+    const customer = await User.findById(userId);
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'Customer not found' });
+    }
+
+    const { addressId } = req.params;
+    const targetAddr = customer.addresses.id(addressId) || customer.addresses.find((a) => a._id?.toString() === addressId);
+
+    if (!targetAddr) {
+      return res.status(404).json({
+        success: false,
+        message: 'Address not found',
+      });
+    }
+
+    customer.addresses.forEach((addr) => {
+      addr.isDefault = addr._id.toString() === targetAddr._id.toString();
+    });
+
+    const fullAddr = [targetAddr.addressLine1, targetAddr.addressLine2, targetAddr.city, targetAddr.state, targetAddr.postalCode].filter(Boolean).join(', ');
+    customer.address = fullAddr;
+
+    await customer.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Default address updated successfully',
+      addresses: customer.addresses,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 // @desc    Delete shipping address
 // @route   DELETE /api/customer/auth/addresses/:addressId
 // @access  Private (Customer)
 const deleteCustomerAddress = async (req, res) => {
   try {
-    const customer = await User.findById(req.user.id);
+    const userId = req.user?._id || req.user?.id || req.user;
+    const customer = await User.findById(userId);
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'Customer not found' });
+    }
+
     customer.addresses = customer.addresses.filter(
       (a) => a._id.toString() !== req.params.addressId
     );
+
+    // If default address was deleted and there are remaining addresses, set the first one as default
+    const hasDefault = customer.addresses.some((a) => a.isDefault);
+    if (!hasDefault && customer.addresses.length > 0) {
+      customer.addresses[0].isDefault = true;
+      const def = customer.addresses[0];
+      customer.address = [def.addressLine1, def.addressLine2, def.city, def.state, def.postalCode].filter(Boolean).join(', ');
+    }
 
     await customer.save();
 
@@ -469,6 +622,8 @@ export {
   getCustomerProfile,
   updateCustomerProfile,
   addCustomerAddress,
+  updateCustomerAddress,
+  setDefaultCustomerAddress,
   deleteCustomerAddress,
   logoutCustomer,
   logoutAllCustomerSessions,

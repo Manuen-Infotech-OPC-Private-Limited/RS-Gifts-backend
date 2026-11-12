@@ -6,6 +6,8 @@ import {
   getCustomerProfile,
   updateCustomerProfile,
   addCustomerAddress,
+  updateCustomerAddress,
+  setDefaultCustomerAddress,
   deleteCustomerAddress,
   logoutCustomer,
   logoutAllCustomerSessions,
@@ -25,6 +27,8 @@ router.route('/profile')
   .put(updateCustomerProfile);
 
 router.post('/addresses', addCustomerAddress);
+router.put('/addresses/:addressId', updateCustomerAddress);
+router.put('/addresses/:addressId/default', setDefaultCustomerAddress);
 router.delete('/addresses/:addressId', deleteCustomerAddress);
 
 // Server-side Session Management & Logout
