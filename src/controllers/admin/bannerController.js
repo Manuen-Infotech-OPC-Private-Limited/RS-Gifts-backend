@@ -24,7 +24,7 @@ const getBanners = async (req, res) => {
 // @access  Private (Admin)
 const createBanner = async (req, res) => {
   try {
-    const { title, subtitle, image, link, position, order, active, buttonText } = req.body;
+    const { tagline, title, subtitle, image, link, position, order, active, buttonText } = req.body;
 
     if (!image) {
       return res.status(400).json({
@@ -34,6 +34,7 @@ const createBanner = async (req, res) => {
     }
 
     const banner = await Banner.create({
+      tagline: tagline ? tagline.trim() : '',
       title: title || '',
       subtitle: subtitle || '',
       image,
@@ -70,8 +71,9 @@ const updateBanner = async (req, res) => {
       });
     }
 
-    const { title, subtitle, image, link, position, order, active, buttonText } = req.body;
+    const { tagline, title, subtitle, image, link, position, order, active, buttonText } = req.body;
 
+    if (tagline !== undefined) banner.tagline = tagline ? tagline.trim() : '';
     if (title !== undefined) banner.title = title;
     if (subtitle !== undefined) banner.subtitle = subtitle;
     if (image !== undefined) banner.image = image;

@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 
 const bannerSchema = new mongoose.Schema({
+  tagline: {
+    type: String,
+    trim: true,
+    default: '',
+  },
   title: {
     type: String,
     trim: true,
