@@ -39,7 +39,7 @@ const couponSchema = new mongoose.Schema({
   },
   usageLimit: {
     type: Number,
-    default: 0, // 0 means unlimited
+    default: 0, // 0 means unlimited total storewide uses
     min: 0,
   },
   usedCount: {
@@ -47,6 +47,48 @@ const couponSchema = new mongoose.Schema({
     default: 0,
     min: 0,
   },
+  perUserLimit: {
+    type: Number,
+    default: 1, // Enforced 1 time per user
+    min: 1,
+  },
+  oneTimePerUser: {
+    type: Boolean,
+    default: true,
+  },
+  usedBy: [
+    {
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null,
+      },
+      email: {
+        type: String,
+        lowercase: true,
+        trim: true,
+        default: '',
+      },
+      phone: {
+        type: String,
+        trim: true,
+        default: '',
+      },
+      orderNumber: {
+        type: String,
+        default: '',
+      },
+      orderId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Order',
+        default: null,
+      },
+      usedAt: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
   active: {
     type: Boolean,
     default: true,

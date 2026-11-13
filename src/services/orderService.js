@@ -3,7 +3,7 @@ import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import Coupon from '../models/Coupon.js';
 import Setting from '../models/Setting.js';
-import { validateCouponForAmount } from '../controllers/customer/customerCouponController.js';
+import { validateCouponForAmount, checkUserCouponUsage } from '../controllers/customer/customerCouponController.js';
 
 // Generate human-friendly unique 6-character alphanumeric order number
 // Format: strictly 6 characters (combination of uppercase alphabets and numbers), e.g. "RS4K92"
@@ -44,7 +44,7 @@ const generateOrderNumber = async () => {
 };
 
 // Validate cart items and calculate totals using real database prices
-const calculateOrderPricing = async (items = [], couponCode = null) => {
+const calculateOrderPricing = async (items = [], couponCode = null, customerInfo = null, user = null) => {
   if (!items || !Array.isArray(items) || items.length === 0) {
     throw new Error('Order items list cannot be empty');
   }
@@ -135,17 +135,35 @@ const calculateOrderPricing = async (items = [], couponCode = null) => {
   let appliedCoupon = null;
 
   if (couponCode && typeof couponCode === 'string' && couponCode.trim() !== '') {
+    const cleanCode = couponCode.trim().toUpperCase();
     const coupon = await Coupon.findOne({
-      code: couponCode.trim().toUpperCase(),
+      code: cleanCode,
       active: true,
     });
 
     if (coupon) {
+      // 1. Standard amount & limits check
       const validation = validateCouponForAmount(coupon, subtotal);
-      if (validation.valid) {
-        discountAmount = validation.discountAmount;
-        appliedCoupon = coupon;
+      if (!validation.valid) {
+        throw new Error(validation.message || `Coupon "${coupon.code}" cannot be applied.`);
       }
+
+      // 2. Strict One-Time Per Customer check
+      const userId = user?._id || user?.id || null;
+      const email = customerInfo?.email || user?.email || '';
+      const phone = customerInfo?.phone || user?.phone || '';
+
+      if (userId || email || phone) {
+        const usageCheck = await checkUserCouponUsage(coupon, { userId, email, phone });
+        if (usageCheck.alreadyUsed) {
+          throw new Error(usageCheck.message || `Coupon "${coupon.code}" has already been used on your account. It is valid for one-time use only.`);
+        }
+      }
+
+      discountAmount = validation.discountAmount;
+      appliedCoupon = coupon;
+    } else {
+      throw new Error(`Coupon code "${cleanCode}" is invalid or expired.`);
     }
   }
 

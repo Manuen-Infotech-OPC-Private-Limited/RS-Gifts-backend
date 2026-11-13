@@ -5,6 +5,7 @@ import { generateOrderNumber,
   calculateOrderPricing,
   deductInventory,
   restockInventory, } from '../../services/orderService.js';
+import { emitToAdmins, emitToAll } from '../../config/socket.js';
 
 // @desc    Place a new gift order (Checkout)
 // @route   POST /api/customer/orders
@@ -42,8 +43,8 @@ const createCustomerOrder = async (req, res) => {
       });
     }
 
-    // Calculate real database pricing and verify stock
-    const pricing = await calculateOrderPricing(items, couponCode);
+    // Calculate real database pricing and verify stock & one-time coupon usage
+    const pricing = await calculateOrderPricing(items, couponCode, customerInfo, req.user);
 
     const orderNumber = await generateOrderNumber();
 
@@ -129,11 +130,34 @@ const createCustomerOrder = async (req, res) => {
       console.warn('Auto-save shipping address to user profile warning:', saveErr.message);
     }
 
-    // Increment coupon usedCount if coupon was applied
+    // Increment coupon usedCount and record customer redemption in usedBy
     if (pricing.appliedCoupon) {
+      const usageEntry = {
+        user: req.user ? req.user._id : null,
+        email: customerInfo.email ? customerInfo.email.toLowerCase().trim() : '',
+        phone: customerInfo.phone ? customerInfo.phone.trim() : '',
+        orderNumber: order.orderNumber,
+        orderId: order._id,
+        usedAt: new Date(),
+      };
+
       await Coupon.findByIdAndUpdate(pricing.appliedCoupon._id, {
         $inc: { usedCount: 1 },
+        $push: { usedBy: usageEntry },
       });
+    }
+
+    // Real-time WebSocket notification to Admin & Storefront
+    try {
+      emitToAdmins('new_order', order);
+      emitToAll('order_created', {
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        totalAmount: order.totalAmount,
+        createdAt: order.createdAt,
+      });
+    } catch (wsErr) {
+      console.warn('[WebSocket] Error broadcasting new order:', wsErr.message);
     }
 
     res.status(201).json({
@@ -365,6 +389,21 @@ const cancelCustomerOrder = async (req, res) => {
       await restockInventory(order.items);
       order.inventoryDeducted = false;
       order.inventoryDeductedAt = null;
+    }
+
+    // Release coupon one-time usage if order was cancelled
+    if (order.couponCode) {
+      try {
+        await Coupon.findOneAndUpdate(
+          { code: order.couponCode.trim().toUpperCase() },
+          {
+            $inc: { usedCount: -1 },
+            $pull: { usedBy: { orderNumber: order.orderNumber } },
+          }
+        );
+      } catch (cpnErr) {
+        console.warn('Failed to release coupon on cancellation:', cpnErr.message);
+      }
     }
 
     await order.save();

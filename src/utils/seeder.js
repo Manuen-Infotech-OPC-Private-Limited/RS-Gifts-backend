@@ -95,6 +95,8 @@ const initialCoupons = [
     discountValue: 10,
     minOrderValue: 499,
     maxDiscount: 150,
+    perUserLimit: 1,
+    oneTimePerUser: true,
     active: true,
   },
   {
@@ -103,6 +105,8 @@ const initialCoupons = [
     discountType: 'flat',
     discountValue: 100,
     minOrderValue: 999,
+    perUserLimit: 1,
+    oneTimePerUser: true,
     active: true,
   },
 ];

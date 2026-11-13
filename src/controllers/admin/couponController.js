@@ -34,6 +34,8 @@ const createCoupon = async (req, res) => {
       maxDiscount,
       expiryDate,
       usageLimit,
+      perUserLimit,
+      oneTimePerUser,
       active,
     } = req.body;
 
@@ -56,6 +58,8 @@ const createCoupon = async (req, res) => {
       if (maxDiscount !== undefined) existing.maxDiscount = Number(maxDiscount);
       if (expiryDate !== undefined) existing.expiryDate = expiryDate || null;
       if (usageLimit !== undefined) existing.usageLimit = Number(usageLimit);
+      if (perUserLimit !== undefined) existing.perUserLimit = Number(perUserLimit);
+      if (oneTimePerUser !== undefined) existing.oneTimePerUser = Boolean(oneTimePerUser);
       if (active !== undefined) existing.active = Boolean(active);
       if (description !== undefined) existing.description = description;
       const updated = await existing.save();
@@ -75,6 +79,8 @@ const createCoupon = async (req, res) => {
       maxDiscount: maxDiscount ? Number(maxDiscount) : 0,
       expiryDate: expiryDate || null,
       usageLimit: usageLimit ? Number(usageLimit) : 0,
+      perUserLimit: perUserLimit !== undefined ? Number(perUserLimit) : 1,
+      oneTimePerUser: oneTimePerUser !== undefined ? Boolean(oneTimePerUser) : true,
       active: active !== undefined ? Boolean(active) : true,
     });
 
@@ -120,6 +126,8 @@ const updateCoupon = async (req, res) => {
         maxDiscount: Number(req.body.maxDiscount || 0),
         expiryDate: req.body.expiryDate || null,
         usageLimit: Number(req.body.usageLimit || 0),
+        perUserLimit: req.body.perUserLimit !== undefined ? Number(req.body.perUserLimit) : 1,
+        oneTimePerUser: req.body.oneTimePerUser !== undefined ? Boolean(req.body.oneTimePerUser) : true,
         active: req.body.active !== undefined ? Boolean(req.body.active) : true,
       });
       return res.status(200).json({
@@ -151,6 +159,8 @@ const updateCoupon = async (req, res) => {
     if (req.body.maxDiscount !== undefined) coupon.maxDiscount = Number(req.body.maxDiscount);
     if (req.body.expiryDate !== undefined) coupon.expiryDate = req.body.expiryDate || null;
     if (req.body.usageLimit !== undefined) coupon.usageLimit = Number(req.body.usageLimit);
+    if (req.body.perUserLimit !== undefined) coupon.perUserLimit = Number(req.body.perUserLimit);
+    if (req.body.oneTimePerUser !== undefined) coupon.oneTimePerUser = Boolean(req.body.oneTimePerUser);
     if (req.body.active !== undefined) coupon.active = Boolean(req.body.active);
 
     const updated = await coupon.save();

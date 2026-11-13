@@ -1,9 +1,11 @@
 import dotenv from 'dotenv';
 import path from 'path';
+import http from 'http';
 import { fileURLToPath } from 'url';
 import app from './app.js';
 import connectDB from './config/db.js';
 import { getJwtSecret } from './config/jwtConfig.js';
+import { initSocket } from './config/socket.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,7 +26,12 @@ const startServer = async () => {
 
     await connectDB();
 
-    const server = app.listen(PORT, () => {
+    const server = http.createServer(app);
+
+    // Initialize Socket.IO Server
+    initSocket(server);
+
+    server.listen(PORT, () => {
       console.log(`Server is running on http://localhost:${PORT}`);
     });
 

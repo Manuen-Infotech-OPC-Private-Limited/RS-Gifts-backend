@@ -1,5 +1,6 @@
 import Order from '../../models/Order.js';
 import { deductInventory, restockInventory } from '../../services/orderService.js';
+import { emitToAdmins, emitToOrder } from '../../config/socket.js';
 
 // Helper to find an order by MongoDB _id or 6-char orderNumber (e.g. RSR78Q)
 const findOrderByIdOrNumber = async (id, populateCustomer = false) => {
@@ -146,6 +147,19 @@ const updateOrderStatus = async (req, res) => {
 
     const updated = await order.save();
 
+    // Real-time WebSocket broadcasts
+    try {
+      emitToAdmins('order_updated', updated);
+      emitToOrder(order._id, 'order_status_updated', {
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        orderStatus: status,
+        statusHistory: order.statusHistory,
+      });
+    } catch (wsErr) {
+      console.warn('[WebSocket] Error broadcasting status update:', wsErr.message);
+    }
+
     res.status(200).json({
       success: true,
       message: `Order #${order.orderNumber} status updated to "${status}"`,
@@ -184,6 +198,18 @@ const updatePaymentStatus = async (req, res) => {
 
     order.paymentStatus = paymentStatus;
     const updated = await order.save();
+
+    // Real-time WebSocket broadcasts
+    try {
+      emitToAdmins('order_updated', updated);
+      emitToOrder(order._id, 'payment_status_updated', {
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        paymentStatus,
+      });
+    } catch (wsErr) {
+      console.warn('[WebSocket] Error broadcasting payment update:', wsErr.message);
+    }
 
     res.status(200).json({
       success: true,
@@ -239,6 +265,19 @@ const updateOrderTracking = async (req, res) => {
 
     const updated = await order.save();
 
+    // Real-time WebSocket broadcasts
+    try {
+      emitToAdmins('order_updated', updated);
+      emitToOrder(order._id, 'order_tracking_updated', {
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        tracking: order.tracking,
+        orderStatus: order.orderStatus,
+      });
+    } catch (wsErr) {
+      console.warn('[WebSocket] Error broadcasting tracking update:', wsErr.message);
+    }
+
     res.status(200).json({
       success: true,
       message: `Order #${order.orderNumber} courier tracking updated`,
@@ -278,6 +317,15 @@ const deleteOrder = async (req, res) => {
     }
 
     await order.deleteOne();
+
+    try {
+      emitToAdmins('order_deleted', {
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+      });
+    } catch (wsErr) {
+      console.warn('[WebSocket] Error broadcasting order deletion:', wsErr.message);
+    }
 
     res.status(200).json({
       success: true,
