@@ -10,6 +10,7 @@ import { normalizeLogoUrl } from '../../utils/urlHelper.js';
 const getActiveBanners = async (req, res) => {
   try {
     const banners = await Banner.find({ active: true }).sort({ order: 1, createdAt: -1 });
+    res.set('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
     res.status(200).json({
       success: true,
       count: banners.length,
