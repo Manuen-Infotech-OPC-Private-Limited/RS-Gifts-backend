@@ -13,12 +13,20 @@ import {
   logoutAllCustomerSessions,
   getCustomerSessions,
   revokeCustomerSession,
+  forgotPassword,
+  verifyResetOtp,
+  resetPasswordWithOtp,
 } from '../../controllers/customer/customerAuthController.js';
 import { protect } from '../../middlewares/authMiddleware.js';
 import { customerLoginLimiter, registerLimiter } from '../../middlewares/rateLimitMiddleware.js';
 
 router.post('/register', registerLimiter, registerCustomer);
 router.post('/login', customerLoginLimiter, loginCustomer);
+
+// Password Reset OTP Routes (Public, Rate Limited)
+router.post('/forgot-password', customerLoginLimiter, forgotPassword);
+router.post('/verify-otp', customerLoginLimiter, verifyResetOtp);
+router.post('/reset-password', customerLoginLimiter, resetPasswordWithOtp);
 
 // Authenticated customer profile, address & session routes
 router.use(protect);

@@ -1,6 +1,8 @@
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import User from '../../models/User.js';
 import generateToken from '../../utils/generateToken.js';
+import { sendPasswordResetOtpEmail } from '../../services/emailService.js';
 import {
   createSession,
   invalidateSession,
@@ -608,6 +610,178 @@ const revokeCustomerSession = async (req, res) => {
   }
 };
 
+// @desc    Request 6-digit OTP for password reset
+// @route   POST /api/customer/auth/forgot-password
+// @access  Public
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email || !String(email).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide your registered email address',
+      });
+    }
+
+    const cleanEmail = String(email).toLowerCase().trim();
+    const user = await User.findOne({ email: cleanEmail });
+
+    // Respond gracefully if user does not exist (prevents email harvesting attacks)
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        message: 'If an account exists with this email, a 6-digit verification code has been sent.',
+      });
+    }
+
+    if (user.isActive === false) {
+      return res.status(403).json({
+        success: false,
+        message: 'This account has been deactivated. Please contact customer support.',
+      });
+    }
+
+    // Generate cryptographically strong 6-digit OTP (100000 - 999999)
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
+
+    // 10 minutes expiry window
+    user.resetPasswordOtp = hashedOtp;
+    user.resetPasswordExpires = new Date(Date.now() + 10 * 60 * 1000);
+    await user.save({ validateBeforeSave: false });
+
+    // Send email using Nodemailer service
+    await sendPasswordResetOtpEmail(user.email, otp, user.firstName || user.name);
+
+    res.status(200).json({
+      success: true,
+      message: 'A 6-digit verification code has been sent to your email address.',
+    });
+  } catch (error) {
+    console.error('[Forgot Password Error]:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error processing password reset request',
+    });
+  }
+};
+
+// @desc    Verify 6-digit OTP code
+// @route   POST /api/customer/auth/verify-otp
+// @access  Public
+const verifyResetOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and 6-digit OTP code are required',
+      });
+    }
+
+    const cleanEmail = String(email).toLowerCase().trim();
+    const cleanOtp = String(otp).trim();
+
+    if (cleanOtp.length !== 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Verification code must be exactly 6 digits',
+      });
+    }
+
+    const hashedOtp = crypto.createHash('sha256').update(cleanOtp).digest('hex');
+
+    const user = await User.findOne({
+      email: cleanEmail,
+      resetPasswordOtp: hashedOtp,
+      resetPasswordExpires: { $gt: new Date() },
+    }).select('+resetPasswordOtp +resetPasswordExpires');
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired verification code. Please request a new OTP.',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'OTP verified successfully! You may now set your new password.',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error verifying OTP code',
+    });
+  }
+};
+
+// @desc    Reset password using verified OTP code
+// @route   POST /api/customer/auth/reset-password
+// @access  Public
+const resetPasswordWithOtp = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email, OTP code, and new password are required',
+      });
+    }
+
+    if (String(newPassword).length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long',
+      });
+    }
+
+    const cleanEmail = String(email).toLowerCase().trim();
+    const cleanOtp = String(otp).trim();
+    const hashedOtp = crypto.createHash('sha256').update(cleanOtp).digest('hex');
+
+    const user = await User.findOne({
+      email: cleanEmail,
+      resetPasswordOtp: hashedOtp,
+      resetPasswordExpires: { $gt: new Date() },
+    }).select('+resetPasswordOtp +resetPasswordExpires +password');
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired OTP code. Please request a new code.',
+      });
+    }
+
+    // Hash the new password with bcrypt
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(String(newPassword), salt);
+
+    // Invalidate the OTP after use
+    user.resetPasswordOtp = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    // Revoke all existing sessions for security
+    try {
+      await invalidateAllUserSessions(user._id);
+    } catch (sessionErr) {
+      console.warn('Could not revoke existing sessions:', sessionErr.message);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successfully! You can now log in with your new password.',
+    });
+  } catch (error) {
+    console.error('[Reset Password Error]:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to reset password',
+    });
+  }
+};
+
 export {
   registerCustomer,
   loginCustomer,
@@ -621,4 +795,7 @@ export {
   logoutAllCustomerSessions,
   getCustomerSessions,
   revokeCustomerSession,
+  forgotPassword,
+  verifyResetOtp,
+  resetPasswordWithOtp,
 };
