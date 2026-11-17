@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 let transporter = null;
-
 /**
  * Initialize or get active Nodemailer transporter
  */
