@@ -10,9 +10,9 @@ let transporter = null;
 const getTransporter = () => {
   if (transporter) return transporter;
 
-  const host = process.env.EMAIL_HOST;
-  const user = process.env.EMAIL_USER;
-  const pass = process.env.EMAIL_PASS;
+  const host = process.env.EMAIL_HOST || 'smtp.gmail.com';
+  const user = process.env.EMAIL_USER || (process.env.EMAIL_FROM && process.env.EMAIL_FROM.includes('@') ? process.env.EMAIL_FROM.replace(/.*<([^>]+)>.*/, '$1').trim() : '');
+  const pass = process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD;
   const port = Number(process.env.EMAIL_PORT) || 587;
   const secure = process.env.EMAIL_SECURE === 'true' || port === 465;
 
